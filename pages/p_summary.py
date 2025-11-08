@@ -1,0 +1,134 @@
+from datetime import datetime
+import streamlit as st
+import pandas as pd
+import altair as alt
+
+from utils import config
+from models.income import Income
+from models.transaction import Transaction
+
+st.set_page_config(page_title="Dashboard", page_icon="💰", layout="wide")
+
+st.title(config.APP_NAME)
+st.markdown("Overview of your income, expenses, and savings.")
+st.divider()
+
+# Get all transactions and incomes
+transactions = Transaction.all()
+incomes = Income.all()
+
+# Convert to DataFrames
+df_expenses = (
+    pd.DataFrame(transactions)
+    if transactions
+    else pd.DataFrame(columns=["amount", "category", "date"])  # pyright: ignore
+)
+df_income = (
+    pd.DataFrame(incomes) if incomes else pd.DataFrame(columns=["amount", "date"])  # pyright: ignore
+)
+
+# Ensure numeric
+df_expenses["amount"] = (
+    df_expenses["amount"].astype(float)
+    if not df_expenses.empty
+    else pd.Series(dtype=float)
+)
+df_income["amount"] = (
+    df_income["amount"].astype(float) if not df_income.empty else pd.Series(dtype=float)
+)
+
+# Ensure date is datetime
+if not df_expenses.empty:
+    df_expenses["date"] = pd.to_datetime(df_expenses["date"])
+if not df_income.empty:
+    df_income["date"] = pd.to_datetime(df_income["date"])
+
+# Filter only current month
+now = datetime.now()
+df_expenses = df_expenses[
+    (df_expenses["date"].dt.year == now.year)
+    & (df_expenses["date"].dt.month == now.month)
+]
+df_income = df_income[
+    (df_income["date"].dt.year == now.year) & (df_income["date"].dt.month == now.month)
+]
+
+# Totals
+total_expenses = df_expenses["amount"].sum()
+monthly_income = df_income["amount"].sum()
+net_savings = monthly_income - total_expenses
+
+# Format metrics
+total_expenses_str = f"{config.CURRENCY} {total_expenses:.2f}"
+monthly_income_str = f"{config.CURRENCY} {monthly_income:.2f}"
+net_savings_str = f"{config.CURRENCY} {net_savings:.2f}"
+
+# Display metrics
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Monthly Income", monthly_income_str)
+with col2:
+    st.metric("Total Expenses", total_expenses_str)
+with col3:
+    st.metric("Net Savings", net_savings_str)
+
+st.divider()
+st.subheader("Expenses by Category")
+
+if not df_expenses.empty:
+    # Group by category
+    category_summary = (
+        df_expenses.groupby("category")["amount"]
+        .sum()
+        .reset_index()
+        .sort_values("amount", ascending=False)
+    )
+
+    # Pie chart for expenses
+    pie_chart = (
+        alt.Chart(category_summary)
+        .mark_arc(innerRadius=50)
+        .encode(
+            theta=alt.Theta(field="amount", type="quantitative"),
+            color=alt.Color(field="category", type="nominal"),
+            tooltip=["category", "amount"],
+        )
+    )
+    with st.container(border=True, horizontal_alignment="center"):
+        st.altair_chart(pie_chart, width="content")
+
+    # Display table
+    table_display = category_summary.copy()
+    table_display["amount"] = table_display["amount"].map(
+        lambda x: f"{config.CURRENCY} {x:.2f}"
+    )
+    st.table(table_display)
+
+else:
+    st.info("No transactions recorded this month.")
+
+st.divider()
+st.subheader("Income vs Expenses Overview")
+
+# Combine totals for chart
+summary_df = pd.DataFrame(
+    {"Type": ["Income", "Expenses"], "Amount": [monthly_income, total_expenses]}
+)
+
+# Bar chart comparing income and expenses
+income_expense_chart = (
+    alt.Chart(summary_df)
+    .mark_bar()
+    .encode(
+        x=alt.X("Type:N", title="Type"),
+        y=alt.Y("Amount:Q", title=f"Amount ({config.CURRENCY})"),
+        color=alt.Color(
+            "Type:N",
+            scale=alt.Scale(
+                domain=["Income", "Expenses"], range=["#4CAF50", "#F44336"]
+            ),
+        ),
+        tooltip=["Type", "Amount"],
+    )
+)
+st.altair_chart(income_expense_chart, width="stretch")
