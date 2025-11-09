@@ -61,13 +61,13 @@ if records:
     col_prev, col_next = st.columns(2)
     with col_prev:
         if (
-            st.button("⬅️ Previous", use_container_width=True)
+            st.button("⬅️ Previous", width="stretch")
             and st.session_state.page_number > 1
         ):
             st.session_state.page_number -= 1
     with col_next:
         if (
-            st.button("Next ➡️", use_container_width=True)
+            st.button("Next ➡️", width="stretch")
             and st.session_state.page_number < total_pages
         ):
             st.session_state.page_number += 1

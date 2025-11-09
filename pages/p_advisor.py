@@ -92,7 +92,7 @@ if not monthly_summary.empty:
         .properties(height=300)
     )
 
-    st.altair_chart(line_chart, use_container_width=True)
+    st.altair_chart(line_chart, width="stretch")
 else:
     st.info("Not enough data to show monthly trend.")
 
