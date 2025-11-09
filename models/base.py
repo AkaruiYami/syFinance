@@ -1,6 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import sqlite3
 from typing import Dict, List, Any, Type
+
 from utils.config import DB_PATH
 
 
@@ -61,15 +62,35 @@ class BaseModel(ABC):
         conn.commit()
 
     @classmethod
-    def all(cls) -> List[Dict[str, Any]]:
-        """Return all rows."""
+    def all(cls, order="asc", order_by="id", limit=None) -> List[Dict[str, Any]]:
+        """Return all rows.
+
+        Parameter:
+        `order`: str = 'asc' | 'desc' (default='asc')
+        `order_by`: str (default='id')
+        `limit`: int | None (default=None)
+
+        For more complex retrieval, use `query` method instead.
+        """
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute(f"SELECT * FROM {cls.table_name}")
+        sql_cmd = f"SELECT * FROM {cls.table_name} ORDER BY {order_by} {order}"
+        if limit is not None:
+            sql_cmd += " LIMIT {limit}"
+        cursor.execute(sql_cmd)
         rows = cursor.fetchall()
 
         # Convert to list of dictionaries
+        col_names = [col[0] for col in cursor.description]
+        return [dict(zip(col_names, row)) for row in rows]
+
+    @classmethod
+    def query(cls, sql: str) -> List[Dict[str, Any]]:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
         col_names = [col[0] for col in cursor.description]
         return [dict(zip(col_names, row)) for row in rows]
 
