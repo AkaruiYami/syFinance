@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 
 from utils import config
@@ -61,7 +61,55 @@ if incomes:
     df_display["amount"] = df_display["amount"].apply(
         lambda x: f"{config.CURRENCY} {x:.2f}"
     )
-    st.table(df_display[["date", "amount", "description"]])
+
+    # --- Pagination Setup ---
+    page_size = 25
+    total_records = len(df_display)
+    total_pages = (total_records - 1) // page_size + 1
+
+    # Store current page in session_state so it persists between reruns
+    if "page_number" not in st.session_state:
+        st.session_state.page_number = 1
+
+    # Pagination controls (centered)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.write(f"Page {st.session_state.page_number} of {total_pages}")
+
+    col_prev, col_next = st.columns(2)
+    with col_prev:
+        if (
+            st.button("⬅️ Previous", use_container_width=True)
+            and st.session_state.page_number > 1
+        ):
+            st.session_state.page_number -= 1
+    with col_next:
+        if (
+            st.button("Next ➡️", use_container_width=True)
+            and st.session_state.page_number < total_pages
+        ):
+            st.session_state.page_number += 1
+
+    # --- Paginate Data ---
+    start_idx = (st.session_state.page_number - 1) * page_size
+    end_idx = start_idx + page_size
+    paginated_df = df_display.iloc[start_idx:end_idx]
+
+    # --- Display Table ---
+    st.table(paginated_df[["date", "amount", "description"]])
+
+    st.divider()
+    st.subheader("Monthly Summary")
+
+    now = datetime.now()
+    df_current_month = df[
+        (df["date"].dt.year == now.year) & (df["date"].dt.month == now.month)
+    ]
+
+    total_income = df_current_month["amount"].sum()
+    total_income_str = f"{config.CURRENCY} {total_income:.2f}"
+
+    st.metric("Total Income (This Month)", total_income_str)
 
 else:
     st.info("No income recorded yet.")

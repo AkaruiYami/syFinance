@@ -35,30 +35,64 @@ if submitted:
 
 st.divider()
 st.subheader("Transaction History")
-record = Transaction.all()
-if record:
-    for r in record:
-        r["amount"] = f"{config.CURRENCY} {r['amount']:.2f}"
-    st.table(record)
+
+records = Transaction.all()
+
+if records:
+    df = pd.DataFrame(records)
+    df["amount"] = (
+        df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
+    )
+
+    # --- Pagination Setup ---
+    page_size = 25
+    total_records = len(df)
+    total_pages = (total_records - 1) // page_size + 1
+
+    # Store current page in session_state so it persists between reruns
+    if "page_number" not in st.session_state:
+        st.session_state.page_number = 1
+
+    # Pagination controls (centered)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.write(f"Page {st.session_state.page_number} of {total_pages}")
+
+    col_prev, col_next = st.columns(2)
+    with col_prev:
+        if (
+            st.button("⬅️ Previous", use_container_width=True)
+            and st.session_state.page_number > 1
+        ):
+            st.session_state.page_number -= 1
+    with col_next:
+        if (
+            st.button("Next ➡️", use_container_width=True)
+            and st.session_state.page_number < total_pages
+        ):
+            st.session_state.page_number += 1
+
+    # --- Paginate Data ---
+    start_idx = (st.session_state.page_number - 1) * page_size
+    end_idx = start_idx + page_size
+    paginated_df = df.iloc[start_idx:end_idx]
+
+    # --- Display Table ---
+    st.table(paginated_df)
+
 else:
     st.info("Table will display recorded transactions once persistence is added.")
-
 
 st.divider()
 st.subheader("Monthly Summary")
 
-# Get all transactions
+# Get all transactions again for summary
 transactions = Transaction.all()
 
 if transactions:
-    # Convert to DataFrame for easier calculations
     df = pd.DataFrame(transactions)
-
-    # Ensure 'amount' is float
     df["amount"] = df["amount"].astype(float)
-
-    # Filter only expenses (assuming expenses are positive amounts for now)
-    df_expenses = df[df["amount"] > 0]  # adjust if your data uses negative for expenses
+    df_expenses = df[df["amount"] > 0]  # adjust if using negatives for expenses
 
     # Total Expenses
     total_expenses = df_expenses["amount"].sum()
@@ -75,10 +109,7 @@ if transactions:
         lambda x: f"{config.CURRENCY} {x:.2f}"
     )
 
-    # Display total expenses
     st.metric("Total Expenses", total_expenses_str)
-
-    # Display per-category table
     st.text("Expenses by Category")
     st.table(category_summary)
 

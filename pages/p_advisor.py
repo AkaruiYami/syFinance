@@ -1,0 +1,211 @@
+# advisor.py
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+import altair as alt
+
+from utils import config
+from models.income import Income
+from models.transaction import Transaction
+
+
+st.set_page_config(page_title="Advisor", layout="wide")
+
+st.title("Financial Advisor")
+st.markdown("Plan and view what the best for your savings.")
+st.divider()
+
+
+# --- Load Data ---
+transactions = Transaction.all()
+incomes = Income.all()
+
+df_expenses = (
+    pd.DataFrame(transactions)
+    if transactions
+    else pd.DataFrame(columns=["amount", "category", "date"])  # pyright: ignore
+)
+df_income = (
+    pd.DataFrame(incomes) if incomes else pd.DataFrame(columns=["amount", "date"])  # pyright: ignore
+)
+
+# --- Prepare Data ---
+for df in [df_expenses, df_income]:
+    if not df.empty:
+        df["amount"] = df["amount"].astype(float)
+        df["date"] = pd.to_datetime(df["date"])
+
+# --- Monthly summaries (grouped by year and month) ---
+if not df_income.empty:
+    df_income["month"] = df_income["date"].dt.to_period("M")
+    income_monthly = df_income.groupby("month")["amount"].sum().reset_index()
+else:
+    income_monthly = pd.DataFrame(columns=["month", "amount"])  # pyright: ignore
+
+if not df_expenses.empty:
+    df_expenses["month"] = df_expenses["date"].dt.to_period("M")
+    expense_monthly = df_expenses.groupby("month")["amount"].sum().reset_index()
+else:
+    expense_monthly = pd.DataFrame(columns=["month", "amount"])  # pyright: ignore
+
+# --- Merge monthly summaries ---
+monthly_summary = pd.merge(
+    income_monthly,
+    expense_monthly,
+    on="month",
+    how="outer",
+    suffixes=("_income", "_expense"),
+).fillna(0)
+
+if not monthly_summary.empty:
+    monthly_summary["month_str"] = monthly_summary["month"].astype(str)
+
+# --- Plot Line Chart (Monthly Income vs Spending) ---
+st.subheader("📈 Monthly Income vs Spending Trend")
+
+if not monthly_summary.empty:
+    chart_data = monthly_summary.melt(
+        id_vars="month_str",
+        value_vars=["amount_income", "amount_expense"],
+        var_name="Type",
+        value_name="Amount",
+    )
+
+    chart_data["Type"] = chart_data["Type"].map(
+        {"amount_income": "Income", "amount_expense": "Spending"}  # pyright: ignore
+    )
+
+    line_chart = (
+        alt.Chart(chart_data)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("month_str:N", title="Month"),
+            y=alt.Y("Amount:Q", title=f"Amount ({config.CURRENCY})"),
+            color=alt.Color(
+                "Type:N",
+                scale=alt.Scale(
+                    domain=["Income", "Spending"], range=["#2196F3", "#F44336"]
+                ),
+            ),
+            tooltip=["month_str", "Type", "Amount"],
+        )
+        .properties(height=300)
+    )
+
+    st.altair_chart(line_chart, use_container_width=True)
+else:
+    st.info("Not enough data to show monthly trend.")
+
+st.divider()
+
+# --- Calculate Current Month and Averages ---
+now = datetime.now()
+this_month = now.strftime("%Y-%m")
+
+if not monthly_summary.empty:
+    # Convert Period to string for filtering
+    monthly_summary["month_str"] = monthly_summary["month"].astype(str)
+    current_row = monthly_summary[monthly_summary["month_str"] == this_month]
+
+    # Current month values
+    if not current_row.empty:
+        monthly_income = current_row["amount_income"].values[0]  # pyright: ignore
+        total_expenses = current_row["amount_expense"].values[0]  # pyright: ignore
+        net_savings = monthly_income - total_expenses
+    else:
+        monthly_income = total_expenses = net_savings = 0
+
+    # Previous months average
+    previous_months = monthly_summary[monthly_summary["month_str"] < this_month]
+    if not previous_months.empty:
+        avg_income = previous_months["amount_income"].mean()
+        avg_expense = previous_months["amount_expense"].mean()
+        avg_savings = (
+            previous_months["amount_income"] - previous_months["amount_expense"]
+        ).mean()
+
+        avg_income_str = f"{config.CURRENCY} {avg_income:.2f}"
+        avg_expense_str = f"{config.CURRENCY} {avg_expense:.2f}"
+        avg_savings_str = f"{config.CURRENCY} {avg_savings:.2f}"
+    else:
+        avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
+else:
+    monthly_income = total_expenses = net_savings = 0
+    avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
+
+# --- Display Averages ---
+st.subheader("📊 Averages from Previous Months")
+col1, col2, col3 = st.columns(3)
+col1.metric("Average Income", avg_income_str)
+col2.metric("Average Spending", avg_expense_str)
+col3.metric("Average Savings", avg_savings_str)
+
+st.divider()
+
+# --- Continue With Personalized Insights (same as before) ---
+st.subheader("🧠 Personalized Insights")
+
+if monthly_income == 0:
+    st.warning(
+        "No income recorded this month. Add your income to get accurate insights."
+    )
+else:
+    savings_rate = (net_savings / monthly_income) * 100 if monthly_income > 0 else 0
+    spending_rate = (total_expenses / monthly_income) * 100 if monthly_income > 0 else 0
+
+    # Insight 1: Savings rate
+    if savings_rate >= 20:
+        st.success(
+            f"✅ Great! You're saving {savings_rate:.1f}% of your income. Keep it up!"
+        )
+    elif 10 <= savings_rate < 20:
+        st.info(
+            f"🙂 You're saving {savings_rate:.1f}% of your income. Aim for 20% or more."
+        )
+    else:
+        st.warning(
+            f"⚠️ You're saving only {savings_rate:.1f}%. Try reducing unnecessary expenses."
+        )
+
+    percent_top = 0
+    top_category = "None"
+    # Insight 2: Top spending category
+    if not df_expenses.empty:
+        top_category = df_expenses.groupby("category")["amount"].sum().idxmax()
+        top_spent = df_expenses.groupby("category")["amount"].sum().max()
+        percent_top = (top_spent / total_expenses) * 100 if total_expenses > 0 else 0
+
+        st.info(
+            f"💸 Your top spending category is **{top_category}**, making up {percent_top:.1f}% of total expenses."
+        )
+
+        if percent_top > 40:
+            st.warning(
+                f"Consider reviewing your **{top_category}** expenses — they represent a large portion of your spending."
+            )
+
+    # Insight 3: Recommendations
+    st.divider()
+    st.subheader("📋 Recommendations")
+
+    recs = []
+    if savings_rate < 10:
+        recs.append("💡 Try setting an automatic savings transfer right after payday.")
+    if total_expenses > monthly_income:
+        recs.append(
+            "⚠️ Your expenses exceed your income — consider reviewing subscriptions or large purchases."
+        )
+    if not df_expenses.empty and percent_top > 40:
+        recs.append(
+            f"💡 Reduce {top_category} spending by 10% to save an extra {config.CURRENCY} {total_expenses * 0.1:.2f} next month."
+        )
+    if savings_rate > 20:
+        recs.append(
+            "✅ You can consider investing part of your savings for better long-term growth."
+        )
+
+    if recs:
+        for r in recs:
+            st.markdown(f"- {r}")
+    else:
+        st.success("Everything looks balanced! Keep up your good financial habits. 💪")
