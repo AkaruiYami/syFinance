@@ -9,7 +9,7 @@ from models.income import Income
 from models.transaction import Transaction
 
 
-st.set_page_config(page_title="Advisor", layout="wide")
+st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Financial Advisor")
 st.markdown("Plan and view what the best for your savings.")

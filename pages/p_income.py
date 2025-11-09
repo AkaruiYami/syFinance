@@ -6,7 +6,7 @@ from components import paginated_table
 from utils import config
 from models.income import Income
 
-st.set_page_config(page_title="Income", layout="wide")
+st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Income")
 st.markdown("Record the money you receive here.")

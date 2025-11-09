@@ -5,7 +5,7 @@ import streamlit as st
 from models.wishlist import Wishlist
 from utils import config
 
-st.set_page_config(page_title="Target", layout="wide")
+st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Target")
 st.markdown("List down your target, goal, or wishlist.")
