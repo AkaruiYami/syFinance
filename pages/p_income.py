@@ -5,7 +5,7 @@ import pandas as pd
 from utils import config
 from models.income import Income
 
-st.set_page_config(page_title="Income", page_icon="💵", layout="wide")
+st.set_page_config(page_title="Income", layout="wide")
 
 st.title("Income")
 st.markdown("Record the money you receive here.")
@@ -65,4 +65,3 @@ if incomes:
 
 else:
     st.info("No income recorded yet.")
-

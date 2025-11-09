@@ -7,7 +7,7 @@ from utils import config
 from models.income import Income
 from models.transaction import Transaction
 
-st.set_page_config(page_title="Dashboard", page_icon="💰", layout="wide")
+st.set_page_config(page_title="Dashboard", layout="wide")
 
 st.title(config.APP_NAME)
 st.markdown("Overview of your income, expenses, and savings.")

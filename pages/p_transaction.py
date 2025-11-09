@@ -5,7 +5,7 @@ from datetime import date
 from utils import config
 from models.transaction import Transaction
 
-st.set_page_config(page_title="Transaction", page_icon="💰", layout="wide")
+st.set_page_config(page_title="Transaction", layout="wide")
 
 st.title("Transactions")
 st.markdown("View, add, and manage your financial transactions here.")
