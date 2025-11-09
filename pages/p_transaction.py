@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from datetime import date
 
+from components import paginated_table
 from utils import config
 from models.transaction import Transaction
 
@@ -44,53 +45,16 @@ if records:
         df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
     )
 
-    # --- Pagination Setup ---
-    page_size = 25
-    total_records = len(df)
-    total_pages = (total_records - 1) // page_size + 1
-
-    # Store current page in session_state so it persists between reruns
-    if "page_number" not in st.session_state:
-        st.session_state.page_number = 1
-
-    # Pagination controls (centered)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.write(f"Page {st.session_state.page_number} of {total_pages}")
-
-    col_prev, col_next = st.columns(2)
-    with col_prev:
-        if (
-            st.button("⬅️ Previous", width="stretch")
-            and st.session_state.page_number > 1
-        ):
-            st.session_state.page_number -= 1
-    with col_next:
-        if (
-            st.button("Next ➡️", width="stretch")
-            and st.session_state.page_number < total_pages
-        ):
-            st.session_state.page_number += 1
-
-    # --- Paginate Data ---
-    start_idx = (st.session_state.page_number - 1) * page_size
-    end_idx = start_idx + page_size
-    paginated_df = df.iloc[start_idx:end_idx]
-
-    # --- Display Table ---
-    st.table(paginated_df)
+    paginated_table(df)
 
 else:
     st.info("Table will display recorded transactions once persistence is added.")
 
+
 st.divider()
 st.subheader("Monthly Summary")
-
-# Get all transactions again for summary
-transactions = Transaction.all()
-
-if transactions:
-    df = pd.DataFrame(transactions)
+if records:
+    df = pd.DataFrame(records)
     df["amount"] = df["amount"].astype(float)
     df_expenses = df[df["amount"] > 0]  # adjust if using negatives for expenses
 
