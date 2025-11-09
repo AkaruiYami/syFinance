@@ -17,7 +17,7 @@ st.divider()
 transactions = Transaction.all()
 incomes = Income.all()
 
-# Convert to DataFrames
+# Convert to DataFrames with default columns if empty
 df_expenses = (
     pd.DataFrame(transactions)
     if transactions
@@ -27,35 +27,43 @@ df_income = (
     pd.DataFrame(incomes) if incomes else pd.DataFrame(columns=["amount", "date"])  # pyright: ignore
 )
 
-# Ensure numeric
-df_expenses["amount"] = (
-    df_expenses["amount"].astype(float)
-    if not df_expenses.empty
-    else pd.Series(dtype=float)
-)
-df_income["amount"] = (
-    df_income["amount"].astype(float) if not df_income.empty else pd.Series(dtype=float)
-)
+# Ensure numeric safely
+if "amount" in df_expenses.columns:
+    df_expenses["amount"] = pd.to_numeric(
+        df_expenses["amount"], errors="coerce"
+    ).fillna(0.0)  # pyright: ignore
+else:
+    df_expenses["amount"] = pd.Series(dtype=float)
 
-# Ensure date is datetime
-if not df_expenses.empty:
-    df_expenses["date"] = pd.to_datetime(df_expenses["date"])
-if not df_income.empty:
-    df_income["date"] = pd.to_datetime(df_income["date"])
+if "amount" in df_income.columns:
+    df_income["amount"] = pd.to_numeric(df_income["amount"], errors="coerce").fillna(  # pyright: ignore
+        0.0
+    )
+else:
+    df_income["amount"] = pd.Series(dtype=float)
+
+# Ensure date is datetime safely
+if "date" in df_expenses.columns and not df_expenses.empty:
+    df_expenses["date"] = pd.to_datetime(df_expenses["date"], errors="coerce")
+if "date" in df_income.columns and not df_income.empty:
+    df_income["date"] = pd.to_datetime(df_income["date"], errors="coerce")
 
 # Filter only current month
 now = datetime.now()
-df_expenses = df_expenses[
-    (df_expenses["date"].dt.year == now.year)
-    & (df_expenses["date"].dt.month == now.month)
-]
-df_income = df_income[
-    (df_income["date"].dt.year == now.year) & (df_income["date"].dt.month == now.month)
-]
+if not df_expenses.empty and "date" in df_expenses.columns:
+    df_expenses = df_expenses[
+        (df_expenses["date"].dt.year == now.year)
+        & (df_expenses["date"].dt.month == now.month)
+    ]
+if not df_income.empty and "date" in df_income.columns:
+    df_income = df_income[
+        (df_income["date"].dt.year == now.year)
+        & (df_income["date"].dt.month == now.month)
+    ]
 
 # Totals
-total_expenses = df_expenses["amount"].sum()
-monthly_income = df_income["amount"].sum()
+total_expenses = df_expenses["amount"].sum() if not df_expenses.empty else 0.0
+monthly_income = df_income["amount"].sum() if not df_income.empty else 0.0
 net_savings = monthly_income - total_expenses
 
 # Format metrics
@@ -94,8 +102,7 @@ if not df_expenses.empty:
             tooltip=["category", "amount"],
         )
     )
-    with st.container(border=True, horizontal_alignment="center"):
-        st.altair_chart(pie_chart, width="content")
+    st.altair_chart(pie_chart, width="stretch")
 
     # Display table
     table_display = category_summary.copy()
@@ -103,7 +110,6 @@ if not df_expenses.empty:
         lambda x: f"{config.CURRENCY} {x:.2f}"
     )
     st.table(table_display)
-
 else:
     st.info("No transactions recorded this month.")
 
