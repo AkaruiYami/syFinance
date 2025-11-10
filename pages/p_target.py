@@ -43,6 +43,12 @@ st.divider()
 st.subheader("Wishlist")
 
 
+def truncate_text(text, length=50):
+    if len(text) > length:
+        return text[:length] + "..."
+    return text
+
+
 @st.fragment
 def wishlist_listing_section():
     wishlist = Wishlist.all(order="desc")
@@ -50,8 +56,52 @@ def wishlist_listing_section():
     if wishlist:
         df = pd.DataFrame(wishlist)
         df_display = df.drop("id", axis=1)
-        st.table(df_display)
 
+        page_size = 5
+        total_items = len(df_display)
+        total_pages = (total_items - 1) // page_size + 1
+
+        if "wishlist_page" not in st.session_state:
+            st.session_state.wishlist_page = 1
+
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col1:
+            if st.button("Previous") and st.session_state.wishlist_page > 1:
+                st.session_state.wishlist_page -= 1
+        with col3:
+            if st.button("Next") and st.session_state.wishlist_page < total_pages:
+                st.session_state.wishlist_page += 1
+        with col2:
+            st.html(
+                f"<p style='text-align: center;'>{st.session_state.wishlist_page} of {total_pages}</p>"
+            )
+
+        start_idx = (st.session_state.wishlist_page - 1) * page_size
+        end_idx = start_idx + page_size
+        page_df = df_display.iloc[start_idx:end_idx]
+
+        st.write("### Wishlist Items")
+        for idx, row in page_df.iterrows():
+            with st.container(border=True):
+                # Container with border, padding, margin, and rounded corners using HTML + CSS
+                st.markdown(f"**Name:** {row['name']}")
+                st.markdown(f"**Date Created:** {row['dateCreated']}")
+                st.markdown(f"**Amount:** {row['amount']} {config.CURRENCY}")
+
+                truncated_source = truncate_text(row["source"])
+                with st.expander(f"Source (click to expand)"):
+                    st.write(row["source"])
+                st.write(f"Preview: {truncated_source}")
+
+                truncated_description = truncate_text(row["description"])
+                with st.expander(f"Description (click to expand)"):
+                    st.write(row["description"])
+                st.write(f"Preview: {truncated_description}")
+
+                st.markdown(f"**Status:** {row['status']}")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("---")
         # -----------------------------
         # Update Item Status
         # -----------------------------
@@ -60,11 +110,13 @@ def wishlist_listing_section():
         new_status = st.selectbox("New Status", Wishlist.STATUS)
 
         if st.button("Update Status"):
-            # Find the selected item's ID
-            item_id = int(df[df["name"] == selected_item]["id"].values[0])  # pyright: ignore
+            item_id = int(
+                df[df["name"] == selected_item]["id"].values[0]
+            )  # pyright: ignore
             Wishlist.update(item_id, {"status": new_status})
             st.success(f"Status of '{selected_item}' updated to {new_status}.")
             st.rerun(scope="fragment")
+
     else:
         st.info("No item in wishlist yet.")
 
