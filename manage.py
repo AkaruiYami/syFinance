@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-
+import getpass
+from argon2 import PasswordHasher
 import sys
 from utils.db import init_db
 
@@ -30,12 +31,37 @@ st.divider()
     print(f"New file created -> [{page_file}]")
 
 
+def init_db_wrapped():
+    ph = PasswordHasher()
+
+    new_username = input("Set Username [admin]: ") or "admin"
+    new_pass = ph.hash(getpass.getpass(prompt="Set Password [admin]: ")) or ph.hash(
+        "admin"
+    )
+    confirm_new_pass = getpass.getpass(prompt="Confirm Password [admin]: ") or "admin"
+    if not ph.verify(new_pass, confirm_new_pass):
+        print("Make sure the password enter are the same!")
+        return
+    print("Success setting up new account.")
+
+    txt = ""
+    with open(".env", "w") as file:
+        txt += 'APP_NAME="Personal Finance Dashboard"\n'
+        txt += 'DB_PATH="data/finance.db"\n'
+        txt += 'CURRENCY="RM"\n'
+        txt += f'USERNAME="{new_username}"\n'
+        txt += f'PASSWORD="{new_pass}"\n'
+        file.write(txt)
+
+    init_db()
+
+
 # ---------------------------------------------
 # COMMAND REGISTRY
 # ---------------------------------------------
 # Map command names to functions
 COMMANDS = {
-    "init_db": init_db,
+    "init_db": init_db_wrapped,
     "new_page": create_new_page,
 }
 
