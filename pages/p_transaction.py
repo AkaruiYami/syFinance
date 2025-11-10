@@ -6,6 +6,11 @@ from components import paginated_table
 from utils import config
 from models.transaction import Transaction
 
+
+from utils.auth import require_login
+
+require_login()
+
 st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Transactions")

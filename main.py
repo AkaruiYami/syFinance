@@ -1,5 +1,6 @@
 import streamlit as st
 
+login_page = st.Page("./pages/p_login.py", title="Login", icon=":material/login:")
 dashboard_page = st.Page(
     "./pages/p_summary.py", title="Dashboard", icon=":material/dashboard:", default=True
 )
@@ -18,7 +19,15 @@ pg = st.navigation(
     {
         "": [dashboard_page, income_page, transaction_page],
         "Tools": [advisor_page, target_page],
+        "User": [login_page],
     }
 )
+
+if st.session_state.get("logged_in"):
+    with st.sidebar:
+        if st.button("🚪 Logout"):
+            st.session_state.logged_in = False
+            st.success("Logged out successfully.")
+            st.switch_page("pages/p_login.py")
 
 pg.run()
