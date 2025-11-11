@@ -25,7 +25,7 @@ with st.form("add_transaction", clear_on_submit=True):
         ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Other"],
     )
     amount = st.number_input(f"Amount ({config.CURRENCY})", min_value=0.0, step=0.10)
-    description = st.text_input("Description")
+    description = st.text_area("Description")
     submitted = st.form_submit_button("Add Transaction")
 
 if submitted:

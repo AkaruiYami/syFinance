@@ -7,6 +7,7 @@ import altair as alt
 from utils import config
 from models.income import Income
 from models.transaction import Transaction
+from models.wishlist import Wishlist
 
 
 from utils.auth import require_login
@@ -18,6 +19,13 @@ st.set_page_config(page_title=config.APP_NAME, layout="wide")
 st.title("Financial Advisor")
 st.markdown("Plan and view what the best for your savings.")
 st.divider()
+
+
+def fmt(amount):
+    try:
+        return f"{config.CURRENCY} {float(amount):.2f}"
+    except NameError:
+        return f"{config.CURRENCY} 0.00"
 
 
 # --- Load Data ---
@@ -213,3 +221,67 @@ else:
             st.markdown(f"- {r}")
     else:
         st.success("Everything looks balanced! Keep up your good financial habits. 💪")
+
+st.divider()
+# --- Analyze the feasibility of buying the item based on your average monthly income ---
+st.subheader("🎯 Goals")
+
+wishlist = Wishlist.query(status=Wishlist.Status.NOT_COMPLETE)
+
+if wishlist:
+    df = pd.DataFrame(wishlist)
+    df["amount"] = df["amount"].astype(float)
+
+    # --- Use average monthly savings instead of income ---
+    try:
+        avg_monthly_savings = float(avg_savings)  # pyright: ignore
+    except NameError:
+        avg_monthly_savings = 0
+
+    if avg_monthly_savings <= 0:
+        st.warning(
+            "Not enough savings data to calculate affordability. Add income and expense records first."
+        )
+    else:
+        # --- Calculate affordability ---
+        df["months_needed"] = (df["amount"] / avg_monthly_savings).round(2)
+
+        now = datetime.now()
+        df["est_purchase_date"] = df["months_needed"].apply(
+            lambda m: (now + pd.DateOffset(months=int(m))).strftime("%Y-%m")
+            if m >= 1
+            else "This Month"
+        )
+
+        # Display with formatted currency
+        df["amount_fmt"] = df["amount"].apply(fmt)
+
+        st.markdown(
+            "### Wishlist Affordability Based on Your **Average Monthly Savings**"
+        )
+        st.caption(f"Average Monthly Savings: {fmt(avg_monthly_savings)}")
+
+        st.table(df[["name", "amount_fmt", "months_needed", "est_purchase_date"]])
+
+        st.markdown("### Advisor Notes")
+
+        for _, row in df.iterrows():
+            n = row["name"]
+            amt = row["amount"]
+            m = row["months_needed"]
+
+            if m <= 1:
+                st.success(
+                    f"You can afford **{n}** this month. Estimated cost: {fmt(amt)}."
+                )
+            elif m <= 3:
+                st.info(
+                    f"You're close to affording **{n}** — about **{m} months** needed."
+                )
+            else:
+                st.warning(
+                    f"**{n}** will require about **{m} months** of savings. Consider prioritizing smaller goals first."
+                )
+
+else:
+    st.info("Looks like you don't have anything you wanted to buy yet.")

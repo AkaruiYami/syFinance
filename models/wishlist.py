@@ -2,7 +2,13 @@ from .base import BaseModel
 
 
 class Wishlist(BaseModel):
-    STATUS = ["NOT COMPLETE", "COMPLETED", "CANCELED", "ON HOLD"]
+    STATUS = ["NOT COMPLETE", "COMPLETED", "CANCELED", "ON HOLD"]  # deprecated
+
+    class Status:
+        NOT_COMPLETE = "NOT COMPLETE"
+        COMPLETED = "COMPLETED"
+        CANCELED = "CANCELED"
+        ON_HOLD = "ON HOLD"
 
     table_name = "wishlist"
     fields = {

@@ -20,7 +20,7 @@ with st.form("add_wishlist", clear_on_submit=True):
     item_name = st.text_input("Item Name")
     amount = st.number_input(f"Amount ({config.CURRENCY})", min_value=0.0, step=0.10)
     source = st.text_input("Source")
-    description = st.text_input("Description")
+    description = st.text_area("Description")
     submitted = st.form_submit_button("Add Item")
 
 if submitted and not item_name:
@@ -110,9 +110,7 @@ def wishlist_listing_section():
         new_status = st.selectbox("New Status", Wishlist.STATUS)
 
         if st.button("Update Status"):
-            item_id = int(
-                df[df["name"] == selected_item]["id"].values[0]
-            )  # pyright: ignore
+            item_id = int(df[df["name"] == selected_item]["id"].values[0])  # pyright: ignore
             Wishlist.update(item_id, {"status": new_status})
             st.success(f"Status of '{selected_item}' updated to {new_status}.")
             st.rerun(scope="fragment")

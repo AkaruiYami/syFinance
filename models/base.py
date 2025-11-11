@@ -86,10 +86,16 @@ class BaseModel(ABC):
         return [dict(zip(col_names, row)) for row in rows]
 
     @classmethod
-    def query(cls, sql: str) -> List[Dict[str, Any]]:
+    def query(cls, **kwargs) -> List[Dict[str, Any]]:
+        for key in kwargs.keys():
+            if key in cls.fields.keys():
+                continue
+            raise KeyError(f"{cls.__name__} does not have field {key}.")
+
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute(sql)
+        sql = f"SELECT * FROM {cls.table_name} WHERE {' = ?, '.join(kwargs.keys())} = ?"
+        cursor.execute(sql, list(kwargs.values()))
         rows = cursor.fetchall()
         col_names = [col[0] for col in cursor.description]
         return [dict(zip(col_names, row)) for row in rows]
