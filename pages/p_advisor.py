@@ -248,9 +248,11 @@ if wishlist:
 
         now = datetime.now()
         df["est_purchase_date"] = df["months_needed"].apply(
-            lambda m: (now + pd.DateOffset(months=int(m))).strftime("%Y-%m")
-            if m >= 1
-            else "This Month"
+            lambda m: (
+                (now + pd.DateOffset(months=int(m))).strftime("%Y-%m")
+                if m >= 1
+                else "This Month"
+            )
         )
 
         # Display with formatted currency
