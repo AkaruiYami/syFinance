@@ -10,23 +10,42 @@ from utils.db import init_db
 # ---------------------------------------------
 def create_new_page():
     if len(sys.argv) < 3:
-        print("Missing page_name aqgument.")
+        print("Missing page_name argument.")
         print("Example usage:")
-        print("`python manage.py new_page my_new_page_name`")
+        print("`python manage.py new_page my_new_page_name [require_login]`")
         return
+
     page_name = sys.argv[2]
+    require_login_arg = sys.argv[3].lower() == "true" if len(sys.argv) > 3 else False
+
     page_file = f"./pages/p_{page_name}.py"
     with open(page_file, "w") as f:
         title = page_name.replace("_", " ").title()
-        template_str = f"""import streamlit as st
 
-st.set_page_config(page_title="{title}", layout="wide")
+        # Base template
+        template_lines = ["import streamlit as st", ""]
 
-st.title("{title}")
-st.markdown("A simple {title} page.")
-st.divider()
-        """
-        f.write(template_str)
+        # Optional require_login
+        if require_login_arg:
+            template_lines += [
+                "from utils.auth import require_login",
+                "",
+                "require_login()",
+                "",
+            ]
+
+        # Page content
+        template_lines += [
+            f'st.set_page_config(page_title="{title}", layout="wide")',
+            "",
+            f'st.title("{title}")',
+            f'st.markdown("A simple {title} page.")',
+            "st.divider()",
+            "",
+            "st.header('Page under construction!')",
+        ]
+
+        f.write("\n".join(template_lines))
 
     print(f"New file created -> [{page_file}]")
 
