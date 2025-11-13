@@ -16,3 +16,9 @@ uv run streamlit run main.py
 ```
 
 Or if you are using linux just run `./run.sh` script.
+
+
+## Dependencies
+
+This project uses [Streamlit](https://streamlit.io), licensed under the Apache License 2.0.  
+See [Streamlit License](https://github.com/streamlit/streamlit/blob/develop/LICENSE) for details.

@@ -1,3 +1,7 @@
+# MIT License
+# Copyright (c) 2025 Yami
+# See LICENSE file for details.
+
 import streamlit as st
 
 login_page = st.Page("./pages/p_login.py", title="Login", icon=":material/login:")
