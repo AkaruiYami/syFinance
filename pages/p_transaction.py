@@ -4,7 +4,7 @@ from datetime import date
 
 from components import paginated_table
 from utils import config
-from models.transaction import Transaction
+from models.transaction import Transactions
 
 
 from utils.auth import require_login
@@ -29,26 +29,26 @@ with st.form("add_transaction", clear_on_submit=True):
     submitted = st.form_submit_button("Add Transaction")
 
 if submitted:
-    Transaction.insert(
-        {
-            "date": str(trans_date),
-            "category": category,
-            "amount": float(amount),
-            "description": description,
-        }
+    new_transaction = Transactions.new(
+        date=trans_date,
+        category=str(category),
+        amount=float(amount),
+        description=str(description),
     )
+    new_transaction.save()
     st.success("Transaction added! (Will be saved later)")
 
 st.divider()
 st.subheader("Transaction History")
 
-records = Transaction.all()
+records = Transactions.objects().all()
 
 if records:
-    df = pd.DataFrame(records)
+    df = pd.DataFrame([rec.to_dict() for rec in records])
     df["amount"] = (
         df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
     )
+    df.set_index("id", inplace=True)
 
     paginated_table(df)
 
@@ -59,7 +59,7 @@ else:
 st.divider()
 st.subheader("Monthly Summary")
 if records:
-    df = pd.DataFrame(records)
+    df = pd.DataFrame([rec.to_dict() for rec in records])
     df["amount"] = df["amount"].astype(float)
     df_expenses = df[df["amount"] > 0]  # adjust if using negatives for expenses
 

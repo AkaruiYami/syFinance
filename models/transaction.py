@@ -1,12 +1,9 @@
 from models.base import BaseModel
+from models.field import DateField, FloatField, TextField
 
 
-class Transaction(BaseModel):
-    table_name = "transactions"
-    fields = {
-        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
-        "date": "TEXT NOT NULL",
-        "category": "TEXT NOT NULL",
-        "amount": "REAL NOT NULL",
-        "description": "TEXT",
-    }
+class Transactions(BaseModel):
+    date = DateField(null=False)
+    category = TextField(null=False)
+    amount = FloatField(null=False)
+    description = TextField()

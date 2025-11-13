@@ -6,7 +6,7 @@ import altair as alt
 
 from utils import config
 from models.income import Income
-from models.transaction import Transaction
+from models.transaction import Transactions
 from models.wishlist import Wishlist
 
 
@@ -29,8 +29,11 @@ def fmt(amount):
 
 
 # --- Load Data ---
-transactions = Transaction.all()
-incomes = Income.all()
+transactions = Transactions.objects().all()
+incomes = Income.objects().all()
+
+transactions = [trans.to_dict() for trans in transactions]
+incomes = [income.to_dict() for income in incomes]
 
 df_expenses = (
     pd.DataFrame(transactions)
@@ -226,7 +229,9 @@ st.divider()
 # --- Analyze the feasibility of buying the item based on your average monthly income ---
 st.subheader("🎯 Goals")
 
-wishlist = Wishlist.query(status=Wishlist.Status.NOT_COMPLETE)
+# wishlist = Wishlist.query(status=Wishlist.Status.NOT_COMPLETE)
+wishlist = Wishlist.objects().filter(status=Wishlist.Status.NOT_COMPLETE).all()
+wishlist = [wish.to_dict() for wish in wishlist]
 
 if wishlist:
     df = pd.DataFrame(wishlist)
