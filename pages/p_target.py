@@ -119,7 +119,6 @@ def wishlist_listing_section():
 
         if st.button("Update Status"):
             item = Wishlist.objects().filter(name=selected_item).first()
-            print(item)
             if item:
                 item.status = new_status
                 item.save()
