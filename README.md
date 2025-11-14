@@ -62,7 +62,7 @@ uv run streamlit run main.py
 
 Upon executing the command, you will see the `Local URL` and `Network URL`. Open them in your browser. And yes, if you have other device that connected to the same network, you can copy the `Network URL` and paste it into the browser in that device to access the app.
 
-[!Note]
+> [!Note]
 > If you are using linux just run `./run.sh` script to run the app.
 
 ---
