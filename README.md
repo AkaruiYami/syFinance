@@ -1,3 +1,6 @@
+[![License: MIT](https://cdn.prod.website-files.com/5e0f1144930a8bc8aace526c/65dd9eb5aaca434fac4f1c34_License-MIT-blue.svg)](/LICENSE)
+![GitHub last commit](https://img.shields.io/github/last-commit/AkaruiYami/syFinance)
+
 # A simple personal finance dashboard
 
 This is a simple finance dashboard where user can monitor their transactions.
@@ -10,7 +13,6 @@ Good for looking over monthly budget.
 ![quick-preview-gif](docs/_static/_preview/syfinance-preview.gif)
 
 ---
-
 
 # Before starting the app
 
@@ -74,3 +76,5 @@ See [Streamlit License](https://github.com/streamlit/streamlit/blob/develop/LICE
 
 This project also include [argon2-cffi](https://github.com/hynek/argon2-cffi), licensed under the MIT License.
 See [argon2-cffi License](https://github.com/hynek/argon2-cffi?tab=MIT-1-ov-file) for details.
+
+![GitHub contributors](https://img.shields.io/github/contributors/AkaruiYami/syFinance)
