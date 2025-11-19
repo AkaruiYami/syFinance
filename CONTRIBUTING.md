@@ -1,4 +1,7 @@
 ![GitHub contributors](https://img.shields.io/github/contributors/AkaruiYami/syFinance)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/AkaruiYami/syFinance)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/AkaruiYami/syFinance)
+
 
 # 🛠️ Contributing to syFinance
 
