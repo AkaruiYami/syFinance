@@ -37,7 +37,8 @@ elif submitted:
         "description": str(description),
         "status": "NOT COMPLETE",
     }
-    Wishlist.insert(new_data)
+    new_wishlist = Wishlist.new(**new_data)
+    new_wishlist.save()
 
 st.divider()
 st.subheader("Wishlist")
@@ -51,7 +52,8 @@ def truncate_text(text, length=50):
 
 @st.fragment
 def wishlist_listing_section():
-    wishlist = Wishlist.all(order="desc")
+    wishlist = Wishlist.objects().all(order="desc")
+    wishlist = [wish.to_dict() for wish in wishlist]
 
     if wishlist:
         df = pd.DataFrame(wishlist)
@@ -107,16 +109,23 @@ def wishlist_listing_section():
         # -----------------------------
         st.markdown("### Update Item Status")
         selected_item = st.selectbox("Select Item", df["name"].tolist())
-        new_status = st.selectbox("New Status", Wishlist.STATUS)
+        _status = [
+            Wishlist.Status.NOT_COMPLETE,
+            Wishlist.Status.COMPLETED,
+            Wishlist.Status.CANCELED,
+            Wishlist.Status.ON_HOLD,
+        ]
+        new_status = st.selectbox("New Status", _status)
 
         if st.button("Update Status"):
-            item_id = int(df[df["name"] == selected_item]["id"].values[0])  # pyright: ignore
-            Wishlist.update(item_id, {"status": new_status})
-            st.success(f"Status of '{selected_item}' updated to {new_status}.")
-            st.rerun(scope="fragment")
-
-    else:
-        st.info("No item in wishlist yet.")
+            item = Wishlist.objects().filter(name=selected_item).first()
+            if item:
+                item.status = new_status
+                item.save()
+                st.success(f"Status of '{selected_item}' updated to {new_status}.")
+                st.rerun(scope="fragment")
+        else:
+            st.info("No item in wishlist yet.")
 
 
 wishlist_listing_section()

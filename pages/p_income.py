@@ -25,23 +25,20 @@ with st.form("add_income", clear_on_submit=True):
     submitted = st.form_submit_button("Add Income")
 
 if submitted:
-    Income.insert(
-        {
-            "date": str(income_date),
-            "amount": float(amount),
-            "description": str(description),
-        }
+    new_income = Income.new(
+        date=income_date, amount=float(amount), description=str(description)
     )
+    new_income.save()
     st.success("Income recorded successfully!")
 
 st.divider()
 st.subheader("Income History")
 
-incomes = Income.all()
+incomes = Income.objects().all()
 
 if incomes:
     # Convert to DataFrame
-    df = pd.DataFrame(incomes)
+    df = pd.DataFrame([inc.to_dict() for inc in incomes])
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date")
 
@@ -49,6 +46,8 @@ if incomes:
     df["month"] = df["date"].dt.to_period("M")
     monthly_income = df.groupby("month")["amount"].sum().reset_index()
     monthly_income["month"] = monthly_income["month"].astype(str)
+
+    df.set_index("id", inplace=True)
 
     # --- Chart ---
     st.subheader("Monthly Income Trend")

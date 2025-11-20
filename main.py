@@ -18,6 +18,7 @@ advisor_page = st.Page(
     "./pages/p_advisor.py", title="Advisor", icon=":material/candlestick_chart:"
 )
 target_page = st.Page("./pages/p_target.py", title="Target", icon=":material/target:")
+# loan_page = st.Page("./pages/p_loan.py", title="Loan", icon=":material/credit_score:")
 
 pg = st.navigation(
     {

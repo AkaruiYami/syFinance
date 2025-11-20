@@ -5,7 +5,7 @@ import altair as alt
 
 from utils import config
 from models.income import Income
-from models.transaction import Transaction
+from models.transaction import Transactions
 
 
 from utils.auth import require_login
@@ -19,9 +19,11 @@ st.markdown("Overview of your income, expenses, and savings.")
 st.divider()
 
 # Get all transactions and incomes
-transactions = Transaction.all()
-incomes = Income.all()
+transactions = Transactions.objects().all()
+incomes = Income.objects().all()
 
+transactions = [trans.to_dict() for trans in transactions]
+incomes = [income.to_dict() for income in incomes]
 # Convert to DataFrames with default columns if empty
 df_expenses = (
     pd.DataFrame(transactions)
