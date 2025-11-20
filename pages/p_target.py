@@ -124,8 +124,8 @@ def wishlist_listing_section():
                 item.save()
                 st.success(f"Status of '{selected_item}' updated to {new_status}.")
                 st.rerun(scope="fragment")
-        else:
-            st.info("No item in wishlist yet.")
+            else:
+                st.info("No item in wishlist yet.")
 
 
 wishlist_listing_section()
