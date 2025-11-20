@@ -1,11 +1,11 @@
 [project]
 name = "syfinance"
-version = "0.1.0"
+version = "1.0.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "argon2-cffi>=25.1.0",
-    "python-dotenv>=1.2.1",
-    "streamlit>=1.51.0",
+  "argon2-cffi>=25.1.0",
+  "python-dotenv>=1.2.1",
+  "streamlit>=1.51.0",
 ]
