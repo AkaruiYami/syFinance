@@ -55,32 +55,88 @@ if records:
 else:
     st.info("Table will display recorded transactions once persistence is added.")
 
-
 st.divider()
-st.subheader("Monthly Summary")
-if records:
-    df = pd.DataFrame([rec.to_dict() for rec in records])
-    df["amount"] = df["amount"].astype(float)
-    df_expenses = df[df["amount"] > 0]  # adjust if using negatives for expenses
+st.subheader("Summary")
 
-    # Total Expenses
-    total_expenses = df_expenses["amount"].sum()
-    total_expenses_str = f"{config.CURRENCY} {total_expenses:.2f}"
 
-    # Expenses per category
-    category_summary = (
-        df_expenses.groupby("category")["amount"]
-        .sum()
-        .reset_index()
-        .sort_values("amount", ascending=False)
-    )
-    category_summary["amount"] = category_summary["amount"].map(
-        lambda x: f"{config.CURRENCY} {x:.2f}"
-    )
+@st.fragment
+def summary_section():
+    if records:
+        df = pd.DataFrame([rec.to_dict() for rec in records])
+        df["amount"] = df["amount"].astype(float)
+        df["date"] = pd.to_datetime(df["date"])
 
-    st.metric("Total Expenses", total_expenses_str)
-    st.text("Expenses by Category")
-    st.table(category_summary)
+        period = st.selectbox(
+            "View spending by:",
+            [
+                "Daily",
+                "Weekly",
+                "Monthly",
+                "Yearly",
+            ],
+        )
 
-else:
-    st.info("No transactions yet to summarize.")
+        if period == "Daily":
+            df["period"] = df["date"].dt.to_period("D").astype(str)
+        elif period == "Weekly":
+            df["period"] = df["date"].dt.to_period("W").astype(str)
+        elif period == "Monthly":
+            df["period"] = df["date"].dt.to_period("M").astype(str)
+        elif period == "Yearly":
+            df["period"] = df["date"].dt.to_period("Y").astype(str)
+
+        st.write("### Filter by Category")
+        all_categories = sorted(df["category"].unique())
+        selected_categories = []
+
+        MAX_CAT_PER_ROW = 5
+        cols = st.columns(MAX_CAT_PER_ROW)
+        for i, cat in enumerate(all_categories):
+            with cols[i % MAX_CAT_PER_ROW]:
+                if st.checkbox(cat, value=True, key=f"cat_{cat}"):
+                    selected_categories.append(cat)
+
+        if not selected_categories:
+            selected_categories = all_categories
+
+        df_filtered = df[df["category"].isin(selected_categories)]
+        summary = (
+            df_filtered.groupby(["period", "category"])["amount"]
+            .sum()
+            .reset_index()
+            .sort_values(["period", "category"])
+        )
+
+        pivot = summary.pivot(
+            index="period", columns="category", values="amount"
+        ).fillna(0)
+
+        st.write(f"### {period} Spending (Stacked Bar Chart)")
+        st.bar_chart(pivot)
+        table_mode = st.selectbox(
+            "Table Display Mode:", ["Show Aggregate", "Show Individually"]
+        )
+
+        st.write("### Summary Table")
+        if table_mode == "Show Aggregate":
+            agg = (
+                df_filtered.groupby("period")["amount"]
+                .sum()
+                .reset_index()
+                .sort_values("period")
+            )
+            agg["amount"] = agg["amount"].map(lambda x: f"{config.CURRENCY} {x:.2f}")
+            st.table(agg)
+
+        else:  # Show Individually
+            summary_table = summary.copy()
+            summary_table["amount"] = summary_table["amount"].map(
+                lambda x: f"{config.CURRENCY} {x:.2f}"
+            )
+            st.table(summary_table)
+
+    else:
+        st.info("No transactions yet to summarize.")
+
+
+summary_section()
