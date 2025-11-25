@@ -54,10 +54,12 @@ def init_db_wrapped():
     ph = PasswordHasher()
 
     new_username = input("Set Username [admin]: ") or "admin"
-    new_pass = ph.hash(getpass.getpass(prompt="Set Password [admin]: ")) or ph.hash(
-        "admin"
+    new_pass = ph.hash(
+        getpass.getpass(prompt="Set Password [admin]: ").strip()
+    ) or ph.hash("admin")
+    confirm_new_pass = (
+        getpass.getpass(prompt="Confirm Password [admin]: ").strip() or "admin"
     )
-    confirm_new_pass = getpass.getpass(prompt="Confirm Password [admin]: ") or "admin"
     if not ph.verify(new_pass, confirm_new_pass):
         print("Make sure the password enter are the same!")
         return
@@ -68,8 +70,8 @@ def init_db_wrapped():
         txt += 'APP_NAME="Personal Finance Dashboard"\n'
         txt += 'DB_PATH="data/finance.db"\n'
         txt += 'CURRENCY="RM"\n'
-        txt += f'USERNAME="{new_username}"\n'
-        txt += f'PASSWORD="{new_pass}"\n'
+        txt += f'APP_USERNAME="{new_username}"\n'
+        txt += f'APP_PASSWORD="{new_pass}"\n'
         file.write(txt)
 
     init_db()
