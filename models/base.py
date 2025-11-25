@@ -15,6 +15,7 @@ class BaseModel(ABC):
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         cls._fields: Dict[str, BaseField] = {}
+        cls.table_name = cls.__name__.lower()
         for attr_name, attr_value in cls.__dict__.items():
             if not isinstance(attr_value, BaseField):
                 continue
@@ -33,8 +34,12 @@ class BaseModel(ABC):
     @classmethod
     def get_connection(cls) -> sqlite3.Connection:
         import os
+        import pathlib
 
-        db_path = os.getenv("DB_PATH", "data/dev.db")
+        db_path = pathlib.Path(os.getenv("DB_PATH", "data/dev.db"))
+        if not db_path.parent.exists():
+            db_path.mkdir(parents=True, exist_ok=True)
+
         if not hasattr(cls, "_conn"):
             cls._conn = sqlite3.connect(db_path, check_same_thread=False)
         return cls._conn
@@ -73,6 +78,10 @@ class BaseModel(ABC):
         )
         cursor.execute(sql)
         conn.commit()
+
+    @classmethod
+    def get_all_tables(cls) -> List[Type["BaseModel"]]:
+        return cls._registry
 
     def to_dict(self) -> Dict:
         """
