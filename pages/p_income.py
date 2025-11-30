@@ -80,7 +80,7 @@ if incomes:
     total_income = df_current_month["amount"].sum()
     total_income_str = f"{config.CURRENCY} {total_income:.2f}"
 
-    st.metric("Total Income (This Month)", total_income_str)
+    st.metric("Monthly Income", total_income_str)
 
 else:
     st.info("No income recorded yet.")

@@ -36,7 +36,7 @@ if submitted:
         description=str(description),
     )
     new_transaction.save()
-    st.success("Transaction added! (Will be saved later)")
+    st.success("Transaction added!")
 
 st.divider()
 st.subheader("Transaction History")
