@@ -38,7 +38,7 @@ class BaseModel(ABC):
 
         db_path = pathlib.Path(os.getenv("DB_PATH", "data/dev.db"))
         if not db_path.parent.exists():
-            db_path.mkdir(parents=True, exist_ok=True)
+            db_path.parent.mkdir(parents=True, exist_ok=True)
 
         if not hasattr(cls, "_conn"):
             cls._conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -47,17 +47,6 @@ class BaseModel(ABC):
     @classmethod
     def new(cls: Type[T], **kwargs) -> T:
         return cls(**kwargs)
-
-    # def commit(self):
-    #     conn = self.get_connection()
-    #     cursor = conn.cursor()
-    #     fields = list(self._fields.keys())
-    #     values = [getattr(self, f) for f in fields]
-    #     placeholders = ", ".join(["?"] * len(values))
-    #     sql = f"INSERT INTO {self.__class__.__name__.lower()} ({', '.join(fields)}) VALUES ({placeholders})"
-    #     cursor.execute(sql, values)
-    #     self.id = cursor.lastrowid
-    #     conn.commit()
 
     @classmethod
     def objects(cls) -> QuerySet:
