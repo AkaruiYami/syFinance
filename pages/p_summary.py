@@ -55,6 +55,10 @@ if "date" in df_expenses.columns and not df_expenses.empty:
 if "date" in df_income.columns and not df_income.empty:
     df_income["date"] = pd.to_datetime(df_income["date"], errors="coerce")
 
+total_expenses = df_expenses["amount"].sum() if not df_expenses.empty else 0.0
+monthly_income = df_income["amount"].sum() if not df_income.empty else 0.0
+net_savings = monthly_income - total_expenses
+
 # Filter only current month
 now = datetime.now()
 if not df_expenses.empty and "date" in df_expenses.columns:
@@ -71,7 +75,6 @@ if not df_income.empty and "date" in df_income.columns:
 # Totals
 total_expenses = df_expenses["amount"].sum() if not df_expenses.empty else 0.0
 monthly_income = df_income["amount"].sum() if not df_income.empty else 0.0
-net_savings = monthly_income - total_expenses
 
 # Format metrics
 total_expenses_str = f"{config.CURRENCY} {total_expenses:.2f}"
