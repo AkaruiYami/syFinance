@@ -1,4 +1,7 @@
 # advisor.py
+import calendar
+from decimal import Decimal
+from math import ceil, trunc
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -251,6 +254,17 @@ if wishlist:
         # --- Calculate affordability ---
         df["months_needed"] = (df["amount"] / avg_monthly_savings).round(2)
 
+        def cal_estimate_time(months):
+            decimals = Decimal(str(months)) % 1
+            today = datetime.now()
+            num_days = calendar.monthrange(today.year, today.month)[1]
+            num_days = ceil(decimals * int(num_days))
+            str_fmt = f"{num_days} day{'s' if num_days > 1 else ''}"
+            months = trunc(months)
+            if months > 0:
+                str_fmt = f"{months} month{'s' if months > 1 else ''} {str_fmt}"
+            return str_fmt
+
         now = datetime.now()
         df["est_purchase_date"] = df["months_needed"].apply(
             lambda m: (
@@ -276,6 +290,7 @@ if wishlist:
                 "est_purchase_date": "Estimated Purchase Date",
             }
         )  # pyright: ignore [reportCallIssue]
+        display["Estimated Time"] = display["Estimated Time"].apply(cal_estimate_time)
         st.table(display)
 
         st.markdown("### Advisor Notes")
