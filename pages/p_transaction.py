@@ -11,6 +11,8 @@ from utils.auth import require_login
 
 require_login()
 
+MAX_ITEM_PER_PAGE = 10
+
 st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Transactions")
@@ -50,7 +52,7 @@ if records:
     )
     df.set_index("id", inplace=True)
 
-    paginated_table(df)
+    paginated_table(df, MAX_ITEM_PER_PAGE, table_id="trans_rec")
 
 else:
     st.info("Table will display recorded transactions once persistence is added.")
@@ -111,8 +113,9 @@ def summary_section():
             index="period", columns="category", values="amount"
         ).fillna(0)
 
-        st.write(f"### {period} Spending (Stacked Bar Chart)")
-        st.bar_chart(pivot)
+        st.write(f"### {period} Spending")
+        # st.bar_chart(pivot)
+        st.line_chart(pivot)
         table_mode = st.selectbox(
             "Table Display Mode:", ["Show Aggregate", "Show Individually"]
         )
@@ -126,14 +129,14 @@ def summary_section():
                 .sort_values("period")
             )
             agg["amount"] = agg["amount"].map(lambda x: f"{config.CURRENCY} {x:.2f}")
-            st.table(agg)
+            paginated_table(agg, MAX_ITEM_PER_PAGE, table_id="trans_aggr")
 
         else:  # Show Individually
             summary_table = summary.copy()
             summary_table["amount"] = summary_table["amount"].map(
                 lambda x: f"{config.CURRENCY} {x:.2f}"
             )
-            st.table(summary_table)
+            paginated_table(summary_table, MAX_ITEM_PER_PAGE, table_id="trans_ind")
 
     else:
         st.info("No transactions yet to summarize.")
