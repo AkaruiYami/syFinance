@@ -267,8 +267,16 @@ if wishlist:
             "### Wishlist Affordability Based on Your **Average Monthly Savings**"
         )
         st.caption(f"Average Monthly Savings: {fmt(avg_monthly_savings)}")
-
-        st.table(df[["name", "amount_fmt", "months_needed", "est_purchase_date"]])
+        display = df[["name", "amount_fmt", "months_needed", "est_purchase_date"]]
+        display = display.rename(
+            columns={
+                "name": "Name",
+                "amount_fmt": "Amount",
+                "months_needed": "Estimated Time",
+                "est_purchase_date": "Estimated Purchase Date",
+            }
+        )  # pyright: ignore [reportCallIssue]
+        st.table(display)
 
         st.markdown("### Advisor Notes")
 
