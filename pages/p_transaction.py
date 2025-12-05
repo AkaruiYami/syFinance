@@ -43,7 +43,7 @@ if submitted:
 st.divider()
 st.subheader("Transaction History")
 
-records = Transactions.objects().all()
+records = Transactions.objects().all(order_by="date")
 
 if records:
     df = pd.DataFrame([rec.to_dict() for rec in records])
