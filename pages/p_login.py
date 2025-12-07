@@ -1,6 +1,6 @@
 import streamlit as st
 from argon2 import PasswordHasher
-from utils import config
+from models.user import User
 
 st.set_page_config(page_title="Login", layout="wide")
 
@@ -12,9 +12,6 @@ st.divider()
 def login_page():
     ph = PasswordHasher()
     st.title("🔐 Login to syFinance")
-
-    USERNAME = config.USERNAME
-    PASSWORD = config.PASSWORD
 
     if st.session_state.get("logged_in", False):
         st.success("✅ Already logged in.")
@@ -29,8 +26,17 @@ def login_page():
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        if username == USERNAME and ph.verify(PASSWORD.strip(), password):
+        user = User.objects().filter(name=username).first()
+        if user is None:
+            st.error("Invalid username.")
+            return
+
+        user = user.to_dict()
+        hashed_pw = user["password"]
+
+        if ph.verify(hashed_pw.strip(), password):
             st.session_state.logged_in = True
+            st.session_state.user_id = user["id"]
             st.success("✅ Login successful!")
             st.switch_page("pages/p_summary.py")
         else:

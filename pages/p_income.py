@@ -26,7 +26,10 @@ with st.form("add_income", clear_on_submit=True):
 
 if submitted:
     new_income = Income.new(
-        date=income_date, amount=float(amount), description=str(description)
+        date=income_date,
+        amount=float(amount),
+        description=str(description),
+        user=int(st.session_state.user_id),
     )
     new_income.save()
     st.success("Income recorded successfully!")
@@ -34,7 +37,9 @@ if submitted:
 st.divider()
 st.subheader("Income History")
 
-incomes = Income.objects().all(order_by="date")
+incomes = (
+    Income.objects().filter(user=int(st.session_state.user_id)).all(order_by="date")
+)
 
 if incomes:
     # Convert to DataFrame

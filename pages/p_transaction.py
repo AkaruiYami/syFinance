@@ -36,6 +36,7 @@ if submitted:
         category=str(category),
         amount=float(amount),
         description=str(description),
+        user=int(st.session_state.user_id),
     )
     new_transaction.save()
     st.success("Transaction added!")
@@ -43,10 +44,15 @@ if submitted:
 st.divider()
 st.subheader("Transaction History")
 
-records = Transactions.objects().all(order_by="date")
+records = (
+    Transactions.objects()
+    .filter(user=int(st.session_state.user_id))
+    .all(order_by="date")
+)
 
 if records:
     df = pd.DataFrame([rec.to_dict() for rec in records])
+    df = df.drop("user", axis=1)
     df["amount"] = (
         df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
     )

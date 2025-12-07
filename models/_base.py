@@ -24,7 +24,7 @@ class QuerySet:
 
             fld = self.model_cls._fields[key]
             if isinstance(fld, ForeignKey):
-                return f"{key}_id"
+                return f"{key}"
             return key
         return key  # fallback (unknown field, treat as-is)
 

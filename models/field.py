@@ -125,7 +125,7 @@ class ForeignKey(BaseField):
             if hasattr(self.to, "table_name")
             else (self.to if isinstance(self.to, str) else None)
         )
-        col = f"{self.name}_id {self.sql_type}"
+        col = f"{self.name} {self.sql_type}"
         if not self.null:
             col += " NOT NULL"
         if target_table:
