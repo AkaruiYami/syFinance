@@ -3,7 +3,7 @@ import getpass
 import os
 import sys
 from argon2 import PasswordHasher, exceptions as argon2_exceptions
-from utils.db import init_db
+from utils.db import init_db, migrate_db
 
 
 # ---------------------------------------------
@@ -120,12 +120,50 @@ def init_db_wrapped():
     print(f"Initialized DB and wrote {env_path}.")
 
 
+def migrate_db_wrapped():
+    init_db(False)
+    migrate_db()
+
+
+def add_new_user():
+    new_user_data = {}
+    ph = PasswordHasher()
+    new_user_data["name"] = input("Set Username [admin]: ").strip() or "admin"
+
+    raw_pass = getpass.getpass(prompt="Set Password [admin]: ").strip()
+    if not raw_pass:
+        raw_pass = "admin"
+
+    confirm_raw = getpass.getpass(prompt="Confirm Password [admin]: ").strip()
+    if not confirm_raw:
+        confirm_raw = "admin"
+
+    if raw_pass != confirm_raw:
+        print("Passwords do not match — aborting.")
+        return
+
+    try:
+        new_user_data["password"] = ph.hash(raw_pass)
+    except Exception as e:
+        print("Failed to hash password:", e)
+        return
+
+    from models.user import User
+
+    d = User.new(**new_user_data)
+    d.save()
+
+    print("Success setting up new account.")
+
+
 # ---------------------------------------------
 # COMMAND REGISTRY
 # ---------------------------------------------
 COMMANDS = {
     "init_db": init_db_wrapped,
+    "migrate": migrate_db_wrapped,
     "new_page": create_new_page,
+    "add_new_user": add_new_user,
 }
 
 

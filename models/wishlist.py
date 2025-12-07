@@ -1,4 +1,5 @@
-from models.field import DateField, TextField, FloatField
+from models.field import DateField, ForeignKey, TextField, FloatField
+from models.user import User
 from .base import BaseModel
 from datetime import datetime
 
@@ -16,3 +17,4 @@ class Wishlist(BaseModel):
     source = TextField()
     description = TextField()
     status = TextField(null=False, default=Status.NOT_COMPLETE)
+    user = ForeignKey(User, null=True)

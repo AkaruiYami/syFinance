@@ -42,7 +42,11 @@ class ForeignKey(BaseField):
     sql_type = "INTEGER"
 
     def __init__(
-        self, to: BaseModel, null=True, default=None, on_delete: Optional[str] = None
+        self,
+        to: type[BaseModel],
+        null=True,
+        default=None,
+        on_delete: Optional[str] = None,
     ):
         """
         to: model class or model class name (str)
@@ -77,7 +81,7 @@ class ForeignKey(BaseField):
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        fk_id = getattr(instance, self.storage_name, None)
+        fk_id = getattr(instance, self.storage_name, None)  # pyright: ignore
         if fk_id is None:
             return None
         target_cls = self.resolve_target_class()
@@ -91,23 +95,23 @@ class ForeignKey(BaseField):
           - None
         """
         if value is None:
-            setattr(instance, self.storage_name, None)
+            setattr(instance, self.storage_name, None)  # pyright: ignore
             return
 
         target_cls = self.resolve_target_class()
 
         # model instance passed
-        if hasattr(value, "__class__") and isinstance(value, target_cls):
+        if hasattr(value, "__class__") and isinstance(value, target_cls):  # pyright: ignore
             if getattr(value, "id", None) is None:
                 raise ValueError(
                     "Can't assign unsaved related object (id is None). Save it first."
                 )
-            setattr(instance, self.storage_name, value.id)
+            setattr(instance, self.storage_name, value.id)  # pyright: ignore
             return
 
         # numeric id passed
         if isinstance(value, int):
-            setattr(instance, self.storage_name, value)
+            setattr(instance, self.storage_name, value)  # pyright: ignore
             return
 
         raise TypeError(f"Can't assign {type(value)!r} to ForeignKey '{self.name}'")

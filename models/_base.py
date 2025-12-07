@@ -60,7 +60,7 @@ class QuerySet:
 
         for name, fld in self.model_cls._fields.items():
             if isinstance(fld, ForeignKey):
-                cols.append(f"{name}_id")
+                cols.append(f"{name}")
             else:
                 cols.append(name)
 

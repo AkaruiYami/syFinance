@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set, Type, TypeVar
 
 from models._base import QuerySet
 from models.field import BaseField
+from utils import config
 
 T = TypeVar("T", bound="BaseModel")
 
@@ -37,12 +38,13 @@ class BaseModel(ABC):
         import os
         import pathlib
 
-        db_path = pathlib.Path(os.getenv("DB_PATH", "data/dev.db"))
+        db_path = pathlib.Path(config.DB_PATH or "./data/finance.db")
         if not db_path.parent.exists():
             db_path.parent.mkdir(parents=True, exist_ok=True)
 
         if not hasattr(cls, "_conn"):
             conn = sqlite3.connect(db_path, check_same_thread=False)
+            conn.execute("PRAGMA foreign_keys = ON")
             conn.row_factory = sqlite3.Row
             cls._conn = conn
         return cls._conn
@@ -177,3 +179,37 @@ class BaseModel(ABC):
                 setattr(instance, storage_name, instance_val)
 
         return instance
+
+    @classmethod
+    def migrate_table(cls):
+        conn = cls.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(f"PRAGMA table_info({cls.table_name})")
+        existing_cols = {row[1]: row for row in cursor.fetchall()}  # name -> row
+
+        for name, field in cls._fields.items():
+            if name not in existing_cols:
+                col_def = f"{name} {field.sql_type}"
+
+                # Handle NOT NULL constraint
+                if not field.null:
+                    # Ask user for a default value to backfill
+                    user_val = input(
+                        f"Table '{cls.table_name}' is missing NOT NULL column '{name}'. "
+                        f"Please provide a default value: "
+                    ).strip()
+                    if not user_val:
+                        raise ValueError(
+                            f"Cannot add NOT NULL column '{name}' without a value."
+                        )
+                    col_def += f" NOT NULL DEFAULT '{user_val}'"
+                else:
+                    # Nullable column
+                    if getattr(field, "default", None) is not None:
+                        col_def += f" DEFAULT {field.default}"
+
+                cursor.execute(f"ALTER TABLE {cls.table_name} ADD COLUMN {col_def}")
+                print(f"Added column '{name}' to {cls.table_name}")
+
+        conn.commit()
