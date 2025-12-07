@@ -1,0 +1,12 @@
+import datetime
+from models.base import BaseModel
+from models.field import DateField, TextField
+
+
+class User(BaseModel):
+    name = TextField(null=False)
+    password = TextField(null=False)
+    email = TextField()
+    description = TextField()
+    date_created = DateField(null=False, default=datetime.datetime.now)
+    last_updated = DateField(null=False, default=datetime.datetime.now)

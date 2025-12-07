@@ -36,6 +36,7 @@ elif submitted:
         "source": str(source),
         "description": str(description),
         "status": "NOT COMPLETE",
+        "user": int(st.session_state.user_id),
     }
     new_wishlist = Wishlist.new(**new_data)
     new_wishlist.save()
@@ -52,7 +53,9 @@ def truncate_text(text, length=50):
 
 @st.fragment
 def wishlist_listing_section():
-    wishlist = Wishlist.objects().all(order="desc")
+    wishlist = (
+        Wishlist.objects().filter(user=int(st.session_state.user_id)).all(order="desc")
+    )
     wishlist = [wish.to_dict() for wish in wishlist]
 
     if wishlist:

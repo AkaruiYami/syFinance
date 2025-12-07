@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import getpass
-from argon2 import PasswordHasher
+import os
 import sys
-from utils.db import init_db
+from argon2 import PasswordHasher, exceptions as argon2_exceptions
+from utils.db import init_db, migrate_db
 
 
 # ---------------------------------------------
@@ -12,39 +13,49 @@ def create_new_page():
     if len(sys.argv) < 3:
         print("Missing page_name argument.")
         print("Example usage:")
-        print("`python manage.py new_page my_new_page_name [require_login]`")
+        print("  python manage.py new_page my_new_page_name [require_login]")
         return
 
     page_name = sys.argv[2]
-    require_login_arg = sys.argv[3].lower() == "true" if len(sys.argv) > 3 else False
+    require_login_arg = False
+    if len(sys.argv) > 3:
+        require_login_arg = str(sys.argv[3]).lower() in ("true", "1", "yes", "y")
 
-    page_file = f"./pages/p_{page_name}.py"
-    with open(page_file, "w") as f:
-        title = page_name.replace("_", " ").title()
+    pages_dir = os.path.join(".", "pages")
+    os.makedirs(pages_dir, exist_ok=True)
 
-        # Base template
-        template_lines = ["import streamlit as st", ""]
+    page_file = os.path.join(pages_dir, f"p_{page_name}.py")
+    title = page_name.replace("_", " ").title()
 
-        # Optional require_login
-        if require_login_arg:
-            template_lines += [
-                "from utils.auth import require_login",
-                "",
-                "require_login()",
-                "",
-            ]
+    # Base template
+    template_lines = ["import streamlit as st", ""]
 
-        # Page content
+    # Optional require_login
+    if require_login_arg:
         template_lines += [
-            f'st.set_page_config(page_title="{title}", layout="wide")',
+            "from utils.auth import require_login",
             "",
-            f'st.title("{title}")',
-            f'st.markdown("A simple {title} page.")',
-            "st.divider()",
+            "require_login()",
             "",
-            "st.header('Page under construction!')",
         ]
 
+    # Page content
+    template_lines += [
+        f'st.set_page_config(page_title="{title}", layout="wide")',
+        "",
+        f'st.title("{title}")',
+        f'st.markdown("A simple {title} page.")',
+        "st.divider()",
+        "",
+        "st.header('Page under construction!')",
+    ]
+
+    # If file exists, do not overwrite silently
+    if os.path.exists(page_file):
+        print(f"File already exists -> [{page_file}] (won't overwrite)")
+        return
+
+    with open(page_file, "w", encoding="utf-8") as f:
         f.write("\n".join(template_lines))
 
     print(f"New file created -> [{page_file}]")
@@ -53,37 +64,106 @@ def create_new_page():
 def init_db_wrapped():
     ph = PasswordHasher()
 
-    new_username = input("Set Username [admin]: ") or "admin"
-    new_pass = ph.hash(
-        getpass.getpass(prompt="Set Password [admin]: ").strip()
-    ) or ph.hash("admin")
-    confirm_new_pass = (
-        getpass.getpass(prompt="Confirm Password [admin]: ").strip() or "admin"
-    )
-    if not ph.verify(new_pass, confirm_new_pass):
-        print("Make sure the password enter are the same!")
+    new_username = input("Set Username [admin]: ").strip() or "admin"
+
+    # Prompt password (allow empty input to select default 'admin')
+    raw_pass = getpass.getpass(prompt="Set Password [admin]: ").strip()
+    if not raw_pass:
+        raw_pass = "admin"
+
+    confirm_raw = getpass.getpass(prompt="Confirm Password [admin]: ").strip()
+    if not confirm_raw:
+        confirm_raw = "admin"
+
+    if raw_pass != confirm_raw:
+        print("Passwords do not match — aborting.")
         return
+
+    try:
+        hashed = ph.hash(raw_pass)
+    except Exception as e:
+        print("Failed to hash password:", e)
+        return
+
     print("Success setting up new account.")
 
-    txt = ""
-    with open(".env", "w") as file:
-        txt += 'APP_NAME="Personal Finance Dashboard"\n'
-        txt += 'DB_PATH="data/finance.db"\n'
-        txt += 'CURRENCY="RM"\n'
-        txt += f'APP_USERNAME="{new_username}"\n'
-        txt += f'APP_PASSWORD="{new_pass}"\n'
-        file.write(txt)
+    env_lines = [
+        'APP_NAME="Personal Finance Dashboard"',
+        'DB_PATH="data/finance.db"',
+        'CURRENCY="RM"',
+        f'APP_USERNAME="{new_username}"',
+        f'APP_PASSWORD="{hashed}"',
+    ]
+    env_text = "\n".join(env_lines) + "\n"
 
-    init_db()
+    env_path = ".env"
+    try:
+        # Write with restrictive permissions (rw-------) where possible
+        with open(env_path, "w", encoding="utf-8") as file:
+            file.write(env_text)
+        try:
+            os.chmod(env_path, 0o600)
+        except Exception:
+            # chmod may fail on Windows or restricted FS — ignore but try
+            pass
+    except OSError as e:
+        print(f"Failed to write {env_path}: {e}")
+        return
+
+    # Call your DB init routine
+    try:
+        init_db()
+    except Exception as e:
+        print("init_db() raised an exception:", e)
+        return
+
+    print(f"Initialized DB and wrote {env_path}.")
+
+
+def migrate_db_wrapped():
+    init_db(False)
+    migrate_db()
+
+
+def add_new_user():
+    new_user_data = {}
+    ph = PasswordHasher()
+    new_user_data["name"] = input("Set Username [admin]: ").strip() or "admin"
+
+    raw_pass = getpass.getpass(prompt="Set Password [admin]: ").strip()
+    if not raw_pass:
+        raw_pass = "admin"
+
+    confirm_raw = getpass.getpass(prompt="Confirm Password [admin]: ").strip()
+    if not confirm_raw:
+        confirm_raw = "admin"
+
+    if raw_pass != confirm_raw:
+        print("Passwords do not match — aborting.")
+        return
+
+    try:
+        new_user_data["password"] = ph.hash(raw_pass)
+    except Exception as e:
+        print("Failed to hash password:", e)
+        return
+
+    from models.user import User
+
+    d = User.new(**new_user_data)
+    d.save()
+
+    print("Success setting up new account.")
 
 
 # ---------------------------------------------
 # COMMAND REGISTRY
 # ---------------------------------------------
-# Map command names to functions
 COMMANDS = {
     "init_db": init_db_wrapped,
+    "migrate": migrate_db_wrapped,
     "new_page": create_new_page,
+    "add_new_user": add_new_user,
 }
 
 

@@ -32,8 +32,8 @@ def fmt(amount):
 
 
 # --- Load Data ---
-transactions = Transactions.objects().all()
-incomes = Income.objects().all()
+transactions = Transactions.objects().filter(user=int(st.session_state.user_id)).all()
+incomes = Income.objects().filter(user=int(st.session_state.user_id)).all()
 
 transactions = [trans.to_dict() for trans in transactions]
 incomes = [income.to_dict() for income in incomes]
@@ -233,7 +233,12 @@ st.divider()
 st.subheader("🎯 Goals")
 
 # wishlist = Wishlist.query(status=Wishlist.Status.NOT_COMPLETE)
-wishlist = Wishlist.objects().filter(status=Wishlist.Status.NOT_COMPLETE).all()
+wishlist = (
+    Wishlist.objects()
+    .filter(user=int(st.session_state.user_id))
+    .filter(status=Wishlist.Status.NOT_COMPLETE)
+    .all()
+)
 wishlist = [wish.to_dict() for wish in wishlist]
 
 if wishlist:
