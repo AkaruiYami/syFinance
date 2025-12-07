@@ -34,7 +34,7 @@ if submitted:
 st.divider()
 st.subheader("Income History")
 
-incomes = Income.objects().all()
+incomes = Income.objects().all(order_by="date")
 
 if incomes:
     # Convert to DataFrame
