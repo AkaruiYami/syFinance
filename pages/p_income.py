@@ -38,7 +38,7 @@ st.divider()
 st.subheader("Income History")
 
 incomes = (
-    Income.objects().filter(user=int(st.session_state.user_id)).all(order_by="date")
+    Income.objects().filter(user_id=int(st.session_state.user_id)).all(order_by="date")
 )
 
 if incomes:

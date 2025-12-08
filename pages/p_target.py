@@ -54,7 +54,9 @@ def truncate_text(text, length=50):
 @st.fragment
 def wishlist_listing_section():
     wishlist = (
-        Wishlist.objects().filter(user=int(st.session_state.user_id)).all(order="desc")
+        Wishlist.objects()
+        .filter(user_id=int(st.session_state.user_id))
+        .all(order="desc")
     )
     wishlist = [wish.to_dict() for wish in wishlist]
 

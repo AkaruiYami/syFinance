@@ -88,8 +88,8 @@ class BaseModel(ABC):
 
         for name, field in cls._fields.items():
             if isinstance(field, ForeignKey):
-                col_def = field.get_column_definition()
-                columns.append(col_def)
+                col_def = field.get_column_definitions()
+                columns.extend(col_def)
             else:
                 if not getattr(field, "sql_type", None):
                     raise ValueError(f"Field '{name}' has no sql_type defined.")
@@ -117,7 +117,7 @@ class BaseModel(ABC):
             if isinstance(field, ForeignKey):
                 # read stored id
                 storage_name = getattr(field, "storage_name", f"_{field_name}_id")
-                data[f"{field_name}"] = getattr(self, storage_name, None)
+                data[f"{field_name}_id"] = getattr(self, storage_name, None)
             else:
                 data[field_name] = getattr(self, field_name)
         data["id"] = self.id
@@ -132,7 +132,7 @@ class BaseModel(ABC):
 
         for name, field in self._fields.items():
             if isinstance(field, ForeignKey):
-                col_name = f"{name}"
+                col_name = f"{name}_id"
                 storage_name = getattr(field, "storage_name", f"_{name}_id")
                 val = getattr(self, storage_name, None)
                 fields.append(col_name)
@@ -175,7 +175,7 @@ class BaseModel(ABC):
         for field_name, field in cls._fields.items():
             if isinstance(field, ForeignKey):
                 storage_name = getattr(field, "storage_name", f"_{field_name}_id")
-                instance_val = data.get(f"{field_name}", None)
+                instance_val = data.get(f"{field_name}_id", None)
                 setattr(instance, storage_name, instance_val)
 
         return instance

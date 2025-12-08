@@ -116,20 +116,17 @@ class ForeignKey(BaseField):
 
         raise TypeError(f"Can't assign {type(value)!r} to ForeignKey '{self.name}'")
 
-    def get_column_definition(self):
-        """
-        Return the SQL fragment for the column (e.g., "user_id INTEGER REFERENCES user(id) ON DELETE CASCADE")
-        """
+    def get_column_definitions(self):
         target_table = (
             self.to.table_name
             if hasattr(self.to, "table_name")
             else (self.to if isinstance(self.to, str) else None)
         )
-        col = f"{self.name} {self.sql_type}"
+        cols = [f"{self.name}_id {self.sql_type}", f"FOREIGN KEY ({self.name}_id)"]
         if not self.null:
-            col += " NOT NULL"
+            cols[0] += " NOT NULL"
         if target_table:
-            col += f" REFERENCES {target_table}(id)"
+            cols[1] += f" REFERENCES {target_table}(id)"
             if self.on_delete:
-                col += f" ON DELETE {self.on_delete}"
-        return col
+                cols[1] += f" ON DELETE {self.on_delete}"
+        return cols
