@@ -19,8 +19,10 @@ st.markdown("Overview of your income, expenses, and savings.")
 st.divider()
 
 # Get all transactions and incomes
-transactions = Transactions.objects().filter(user=int(st.session_state.user_id)).all()
-incomes = Income.objects().filter(user=int(st.session_state.user_id)).all()
+transactions = (
+    Transactions.objects().filter(user_id=int(st.session_state.user_id)).all()
+)
+incomes = Income.objects().filter(user_id=int(st.session_state.user_id)).all()
 
 transactions = [trans.to_dict() for trans in transactions]
 incomes = [income.to_dict() for income in incomes]

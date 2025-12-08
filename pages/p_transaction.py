@@ -46,13 +46,13 @@ st.subheader("Transaction History")
 
 records = (
     Transactions.objects()
-    .filter(user=int(st.session_state.user_id))
+    .filter(user_id=int(st.session_state.user_id))
     .all(order_by="date")
 )
 
 if records:
     df = pd.DataFrame([rec.to_dict() for rec in records])
-    df = df.drop("user", axis=1)
+    df = df.drop("user_id", axis=1)
     df["amount"] = (
         df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
     )
