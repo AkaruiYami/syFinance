@@ -57,8 +57,10 @@ if records:
         df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
     )
     df.set_index("id", inplace=True)
+    df = df.sort_values("date", ascending=False)
 
-    paginated_table(df, MAX_ITEM_PER_PAGE, table_id="trans_rec")
+    # paginated_table(df, MAX_ITEM_PER_PAGE, table_id="trans_rec")
+    st.dataframe(df)
 
 else:
     st.info("Table will display recorded transactions once persistence is added.")
@@ -135,14 +137,16 @@ def summary_section():
                 .sort_values("period")
             )
             agg["amount"] = agg["amount"].map(lambda x: f"{config.CURRENCY} {x:.2f}")
-            paginated_table(agg, MAX_ITEM_PER_PAGE, table_id="trans_aggr")
+            # paginated_table(agg, MAX_ITEM_PER_PAGE, table_id="trans_aggr")
+            st.dataframe(agg)
 
         else:  # Show Individually
             summary_table = summary.copy()
             summary_table["amount"] = summary_table["amount"].map(
                 lambda x: f"{config.CURRENCY} {x:.2f}"
             )
-            paginated_table(summary_table, MAX_ITEM_PER_PAGE, table_id="trans_ind")
+            # paginated_table(summary_table, MAX_ITEM_PER_PAGE, table_id="trans_ind")
+            st.dataframe(summary_table)
 
     else:
         st.info("No transactions yet to summarize.")

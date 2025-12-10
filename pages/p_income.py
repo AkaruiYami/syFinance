@@ -45,7 +45,7 @@ if incomes:
     # Convert to DataFrame
     df = pd.DataFrame([inc.to_dict() for inc in incomes])
     df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date")
+    df = df.sort_values("date", ascending=False)
 
     # --- Monthly Summary ---
     df["month"] = df["date"].dt.to_period("M")
@@ -72,7 +72,8 @@ if incomes:
         lambda x: f"{config.CURRENCY} {x:.2f}"
     )
     df_display["date"] = df_display["date"].dt.date
-    paginated_table(df_display, to_display=["date", "amount", "description"])
+    # paginated_table(df_display, to_display=["date", "amount", "description"])
+    st.dataframe(df_display[["date", "amount", "description"]])
 
     st.divider()
     st.subheader("Monthly Summary")
