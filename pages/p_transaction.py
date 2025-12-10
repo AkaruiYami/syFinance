@@ -57,6 +57,7 @@ if records:
         df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
     )
     df.set_index("id", inplace=True)
+    df = df.sort_values("date", ascending=False)
 
     paginated_table(df, MAX_ITEM_PER_PAGE, table_id="trans_rec")
 

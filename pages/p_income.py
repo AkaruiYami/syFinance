@@ -45,7 +45,7 @@ if incomes:
     # Convert to DataFrame
     df = pd.DataFrame([inc.to_dict() for inc in incomes])
     df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date")
+    df = df.sort_values("date", ascending=False)
 
     # --- Monthly Summary ---
     df["month"] = df["date"].dt.to_period("M")
