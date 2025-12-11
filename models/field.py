@@ -8,9 +8,10 @@ if TYPE_CHECKING:
 class BaseField:
     sql_type: str
 
-    def __init__(self, null=True, default=None):
+    def __init__(self, null=True, default=None, unique=False):
         self.null = null
         self.default = default
+        self.unique = unique
         self.name = None  # Will be set dynamically by the model
 
 

@@ -96,6 +96,8 @@ class BaseModel(ABC):
                 col_def = f"{name} {field.sql_type}"
                 if not field.null:
                     col_def += " NOT NULL"
+                if field.unique:
+                    col_def += " UNIQUE"
                 columns.append(col_def)
 
         sql = f"CREATE TABLE IF NOT EXISTS {cls.table_name} ({', '.join(columns)})"
