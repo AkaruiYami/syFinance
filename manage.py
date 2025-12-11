@@ -126,9 +126,15 @@ def migrate_db_wrapped():
 
 
 def add_new_user():
+    from models.user import User
+
     new_user_data = {}
     ph = PasswordHasher()
+
     new_user_data["name"] = input("Set Username [admin]: ").strip() or "admin"
+    if User.objects().filter(name=new_user_data["name"]).first() is not None:
+        print("User with given username already exist. Try other username instead.")
+        return
 
     raw_pass = getpass.getpass(prompt="Set Password [admin]: ").strip()
     if not raw_pass:
@@ -147,8 +153,6 @@ def add_new_user():
     except Exception as e:
         print("Failed to hash password:", e)
         return
-
-    from models.user import User
 
     d = User.new(**new_user_data)
     d.save()
