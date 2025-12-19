@@ -121,9 +121,12 @@ def summary_section():
             index="period", columns="category", values="amount"
         ).fillna(0)
 
+        line_tab, bar_tab = st.tabs(["Line", "Bar"])
         st.write(f"### {period} Spending")
-        # st.bar_chart(pivot)
-        st.line_chart(pivot)
+        with line_tab:
+            st.line_chart(pivot)
+        with bar_tab:
+            st.bar_chart(pivot)
         table_mode = st.selectbox(
             "Table Display Mode:", ["Show Aggregate", "Show Individually"]
         )
