@@ -45,11 +45,25 @@ if incomes:
     # Convert to DataFrame
     df = pd.DataFrame([inc.to_dict() for inc in incomes])
     df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date", ascending=False)
 
     # --- Monthly Summary ---
     df["month"] = df["date"].dt.to_period("M")
-    monthly_income = df.groupby("month")["amount"].sum().reset_index()
+
+    monthly_income = df.groupby("month")["amount"].sum().to_frame()
+
+    # 🔹 Ensure current month exists
+    current_month = pd.Period(pd.Timestamp.today(), freq="M")
+
+    all_months = pd.period_range(
+        start=monthly_income.index.min(), end=current_month, freq="M"
+    )
+
+    monthly_income = (
+        monthly_income.reindex(all_months, fill_value=0)
+        .reset_index()
+        .rename(columns={"index": "month"})
+    )
+
     monthly_income["month"] = monthly_income["month"].astype(str)
 
     df.set_index("id", inplace=True)
