@@ -2,11 +2,11 @@
 import calendar
 from decimal import Decimal
 from math import ceil, trunc
-import math
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 import altair as alt
+import numpy as np
 
 from utils import config
 from models.income import Income
@@ -246,21 +246,36 @@ if wishlist:
     df["amount"] = df["amount"].astype(float)
 
     # --- Use average monthly savings instead of income ---
-    # TODO: use weighted moving average of latest 3 months intead
+    WMA_N = len(config.WMA_WEIGHTS)
+    latest_incomes = monthly_summary["amount_income"].tail(WMA_N)
+    latest_expenses = monthly_summary["amount_expense"].tail(WMA_N)
+    latest_savings = latest_incomes - latest_expenses
+    n_savings = len(latest_savings)
+    if n_savings < WMA_N:
+        latest_savings = [0] * (WMA_N - n_savings) + latest_savings
+    avg_monthly_savings = sum(
+        round(saving * w, 2) for saving, w in zip(latest_savings, config.WMA_WEIGHTS)
+    )
+
+    # compute trend adjustment
+    monthly_summary["savings"] = (
+        monthly_summary["amount_income"] - monthly_summary["amount_expense"]
+    )
+    monthly_summary = monthly_summary.sort_values("month").reset_index(drop=True)
+    monthly_summary["month_index"] = np.arange(1, len(monthly_summary) + 1)
+    _x = monthly_summary["month_index"]
+    _y = monthly_summary["savings"]
+    slope, intercept = np.polyfit(_x, _y, 1)
+    # forecast savings for next month
+    next_month_index = monthly_summary["month_index"].iloc[-1] + 1
+    trend_adjusted_savings = intercept + slope * next_month_index
+
     try:
-        WMA_N = len(config.WMA_WEIGHTS)
-        latest_incomes = monthly_summary["amount_income"].tail(WMA_N)
-        latest_expenses = monthly_summary["amount_expense"].tail(WMA_N)
-        latest_savings = latest_incomes - latest_expenses
-        n_savings = len(latest_savings)
-        if n_savings < WMA_N:
-            latest_savings = [0] * (WMA_N - n_savings) + latest_savings
-        avg_monthly_savings = sum(
-            round(saving * w, 2)
-            for saving, w in zip(latest_savings, config.WMA_WEIGHTS)
-        )
+        cusion = avg_expense * config.CUSION_FACTOR  # pyright: ignore[reportPossiblyUnboundVariable]
     except NameError:
-        avg_monthly_savings = 0
+        cusion = 0
+
+    affordable_savings = avg_monthly_savings + slope - cusion
 
     if avg_monthly_savings <= 0:
         st.warning(
@@ -268,7 +283,7 @@ if wishlist:
         )
     else:
         # --- Calculate affordability ---
-        df["months_needed"] = (df["amount"] / avg_monthly_savings).round(2)
+        df["months_needed"] = (df["amount"] / max(affordable_savings, 0.01)).round(2)
 
         def cal_estimate_time(months):
             decimals = Decimal(str(months)) % 1
@@ -281,14 +296,16 @@ if wishlist:
                 str_fmt = f"{months} month{'s' if months > 1 else ''} {str_fmt}"
             return str_fmt
 
+        def safe_est_purchase_date(months):
+            if months < 1:
+                return "This Month"
+            if months > 1200:  # cap at 100 years
+                return "Far Future"
+            now = pd.Timestamp.now()
+            return (now + pd.DateOffset(months=int(months))).strftime("%Y-%m")
+
         now = datetime.now()
-        df["est_purchase_date"] = df["months_needed"].apply(
-            lambda m: (
-                (now + pd.DateOffset(months=int(m))).strftime("%Y-%m")
-                if m >= 1
-                else "This Month"
-            )
-        )
+        df["est_purchase_date"] = df["months_needed"].apply(safe_est_purchase_date)
 
         # Display with formatted currency
         df["amount_fmt"] = df["amount"].apply(fmt)
@@ -296,9 +313,20 @@ if wishlist:
         st.markdown(
             "### Wishlist Affordability Based on Your **Average Monthly Savings**"
         )
-        st.caption(
-            f"Weighted Moving Average Monthly Savings: {fmt(avg_monthly_savings)}"
-        )
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.caption(
+                f"Weighted Moving Average Monthly Savings: {fmt(avg_monthly_savings)}"
+            )
+        with col2:
+            st.caption(f"Saving Trend per Month: {fmt(slope)}")
+        with col3:
+            st.caption(f"Cusion: {fmt(cusion)}")
+        with col4:
+            st.caption(f"Affordable Savings: {fmt(affordable_savings)}")
+
+        if affordable_savings <= 0:
+            st.error("Not enough savings. Consider improve your monthly savings first.")
         display = df[["name", "amount_fmt", "months_needed", "est_purchase_date"]]
         display = display.rename(
             columns={
