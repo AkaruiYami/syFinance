@@ -2,7 +2,6 @@ import pandas as pd
 import streamlit as st
 from datetime import date
 
-from components import paginated_table
 from utils import config
 from models.transaction import Transactions
 
@@ -121,6 +120,21 @@ def summary_section():
             index="period", columns="category", values="amount"
         ).fillna(0)
 
+        # build full period range
+        start = df["date"].min()
+        end = df["date"].max()
+
+        if period == "Daily":
+            full_periods = pd.period_range(start, end, freq="D").astype(str)
+        elif period == "Weekly":
+            full_periods = pd.period_range(start, end, freq="W").astype(str)
+        elif period == "Monthly":
+            full_periods = pd.period_range(start, end, freq="M").astype(str)
+        elif period == "Yearly":
+            full_periods = pd.period_range(start, end, freq="Y").astype(str)
+
+        pivot = pivot.reindex(full_periods, fill_value=0)  # pyright: ignore
+
         line_tab, bar_tab = st.tabs(["Line", "Bar"])
         st.write(f"### {period} Spending")
         with line_tab:
@@ -140,7 +154,6 @@ def summary_section():
                 .sort_values("period")
             )
             agg["amount"] = agg["amount"].map(lambda x: f"{config.CURRENCY} {x:.2f}")
-            # paginated_table(agg, MAX_ITEM_PER_PAGE, table_id="trans_aggr")
             st.dataframe(agg)
 
         else:  # Show Individually
@@ -148,7 +161,6 @@ def summary_section():
             summary_table["amount"] = summary_table["amount"].map(
                 lambda x: f"{config.CURRENCY} {x:.2f}"
             )
-            # paginated_table(summary_table, MAX_ITEM_PER_PAGE, table_id="trans_ind")
             st.dataframe(summary_table)
 
     else:
