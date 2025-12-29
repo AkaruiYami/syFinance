@@ -2,6 +2,7 @@
 import calendar
 from decimal import Decimal
 from math import ceil, trunc
+import math
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -153,7 +154,6 @@ else:
     monthly_income = total_expenses = net_savings = 0
     avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
 
-# --- Display Averages ---
 st.subheader("📊 Averages from Previous Months")
 col1, col2, col3 = st.columns(3)
 col1.metric("Average Income", avg_income_str)
@@ -162,7 +162,6 @@ col3.metric("Average Savings", avg_savings_str)
 
 st.divider()
 
-# --- Continue With Personalized Insights (same as before) ---
 st.subheader("🧠 Personalized Insights")
 
 if monthly_income == 0:
@@ -234,7 +233,6 @@ st.divider()
 # --- Analyze the feasibility of buying the item based on your average monthly income ---
 st.subheader("🎯 Goals")
 
-# wishlist = Wishlist.query(status=Wishlist.Status.NOT_COMPLETE)
 wishlist = (
     Wishlist.objects()
     .filter(user_id=int(st.session_state.user_id))
@@ -248,8 +246,19 @@ if wishlist:
     df["amount"] = df["amount"].astype(float)
 
     # --- Use average monthly savings instead of income ---
+    # TODO: use weighted moving average of latest 3 months intead
     try:
-        avg_monthly_savings = float(avg_savings)  # pyright: ignore
+        WMA_N = len(config.WMA_WEIGHTS)
+        latest_incomes = monthly_summary["amount_income"].tail(WMA_N)
+        latest_expenses = monthly_summary["amount_expense"].tail(WMA_N)
+        latest_savings = latest_incomes - latest_expenses
+        n_savings = len(latest_savings)
+        if n_savings < WMA_N:
+            latest_savings = [0] * (WMA_N - n_savings) + latest_savings
+        avg_monthly_savings = sum(
+            round(saving * w, 2)
+            for saving, w in zip(latest_savings, config.WMA_WEIGHTS)
+        )
     except NameError:
         avg_monthly_savings = 0
 
@@ -287,7 +296,9 @@ if wishlist:
         st.markdown(
             "### Wishlist Affordability Based on Your **Average Monthly Savings**"
         )
-        st.caption(f"Average Monthly Savings: {fmt(avg_monthly_savings)}")
+        st.caption(
+            f"Weighted Moving Average Monthly Savings: {fmt(avg_monthly_savings)}"
+        )
         display = df[["name", "amount_fmt", "months_needed", "est_purchase_date"]]
         display = display.rename(
             columns={
