@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import altair as alt
+import numpy as np
 
 from utils import config
 from models.income import Income
@@ -153,7 +154,6 @@ else:
     monthly_income = total_expenses = net_savings = 0
     avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
 
-# --- Display Averages ---
 st.subheader("📊 Averages from Previous Months")
 col1, col2, col3 = st.columns(3)
 col1.metric("Average Income", avg_income_str)
@@ -162,7 +162,6 @@ col3.metric("Average Savings", avg_savings_str)
 
 st.divider()
 
-# --- Continue With Personalized Insights (same as before) ---
 st.subheader("🧠 Personalized Insights")
 
 if monthly_income == 0:
@@ -234,7 +233,6 @@ st.divider()
 # --- Analyze the feasibility of buying the item based on your average monthly income ---
 st.subheader("🎯 Goals")
 
-# wishlist = Wishlist.query(status=Wishlist.Status.NOT_COMPLETE)
 wishlist = (
     Wishlist.objects()
     .filter(user_id=int(st.session_state.user_id))
@@ -248,18 +246,51 @@ if wishlist:
     df["amount"] = df["amount"].astype(float)
 
     # --- Use average monthly savings instead of income ---
-    try:
-        avg_monthly_savings = float(avg_savings)  # pyright: ignore
-    except NameError:
-        avg_monthly_savings = 0
+    WMA_N = len(config.WMA_WEIGHTS)
+    monthly_summary = monthly_summary.head(-1)
+    latest_incomes = monthly_summary["amount_income"].tail(WMA_N)
+    latest_expenses = monthly_summary["amount_expense"].tail(WMA_N)
+    latest_savings = latest_incomes - latest_expenses
+    n_savings = len(latest_savings)
+    if n_savings < WMA_N:
+        latest_savings = [0] * (WMA_N - n_savings) + latest_savings
+    avg_monthly_savings = sum(
+        round(saving * w, 2) for saving, w in zip(latest_savings, config.WMA_WEIGHTS)
+    )
 
-    if avg_monthly_savings <= 0:
+    # compute trend adjustment
+    monthly_summary["savings"] = (
+        monthly_summary["amount_income"] - monthly_summary["amount_expense"]
+    )
+    monthly_summary = monthly_summary.sort_values("month").reset_index(drop=True)
+    monthly_summary["month_index"] = np.arange(1, len(monthly_summary) + 1)
+    _x = monthly_summary["month_index"]
+    _y = monthly_summary["savings"]
+    slope, intercept = np.polyfit(_x, _y, 1)
+    # forecast savings for next month
+    next_month_index = monthly_summary["month_index"].iloc[-1] + 1
+    trend_adjusted_savings = intercept + slope * next_month_index
+
+    avg_expense = (
+        monthly_summary["amount_expense"].mean() if not monthly_summary.empty else 0
+    )
+    cusion = avg_expense * config.CUSION_FACTOR
+
+    if len(monthly_summary) < config.MIN_ENTRY_SLOPE:
+        slope = 0
+
+    affordable_savings = max(avg_monthly_savings + slope - cusion, 0)
+
+    if len(monthly_summary["amount_income"]) <= 0:
         st.warning(
             "Not enough savings data to calculate affordability. Add income and expense records first."
         )
     else:
         # --- Calculate affordability ---
-        df["months_needed"] = (df["amount"] / avg_monthly_savings).round(2)
+        if affordable_savings == 0:
+            df["months_needed"] = 1_000_000_000
+        else:
+            df["months_needed"] = (df["amount"] / affordable_savings).round(2)
 
         def cal_estimate_time(months):
             decimals = Decimal(str(months)) % 1
@@ -272,14 +303,16 @@ if wishlist:
                 str_fmt = f"{months} month{'s' if months > 1 else ''} {str_fmt}"
             return str_fmt
 
+        def safe_est_purchase_date(months):
+            if months < 1:
+                return "This Month"
+            if months > 600:  # cap at 50 years
+                return "Far Future"
+            now = pd.Timestamp.now()
+            return (now + pd.DateOffset(months=int(months))).strftime("%Y-%m")
+
         now = datetime.now()
-        df["est_purchase_date"] = df["months_needed"].apply(
-            lambda m: (
-                (now + pd.DateOffset(months=int(m))).strftime("%Y-%m")
-                if m >= 1
-                else "This Month"
-            )
-        )
+        df["est_purchase_date"] = df["months_needed"].apply(safe_est_purchase_date)
 
         # Display with formatted currency
         df["amount_fmt"] = df["amount"].apply(fmt)
@@ -287,7 +320,20 @@ if wishlist:
         st.markdown(
             "### Wishlist Affordability Based on Your **Average Monthly Savings**"
         )
-        st.caption(f"Average Monthly Savings: {fmt(avg_monthly_savings)}")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.caption(
+                f"Weighted Moving Average Monthly Savings: {fmt(avg_monthly_savings)}"
+            )
+        with col2:
+            st.caption(f"Saving Trend per Month: {fmt(slope)}")
+        with col3:
+            st.caption(f"Cusion: {fmt(cusion)}")
+        with col4:
+            st.caption(f"Affordable Savings: {fmt(affordable_savings)}")
+
+        if affordable_savings <= 0:
+            st.error("Not enough savings. Consider improve your monthly savings first.")
         display = df[["name", "amount_fmt", "months_needed", "est_purchase_date"]]
         display = display.rename(
             columns={
