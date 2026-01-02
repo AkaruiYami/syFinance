@@ -10,5 +10,7 @@ CURRENCY = os.getenv("CURRENCY")
 USERNAME = os.getenv("APP_USERNAME")
 PASSWORD = os.getenv("APP_PASSWORD")
 
-WMA_WEIGHTS = [0.2, 0.3, 0.5]
+WMA_WEIGHTS = [1]
 CUSION_FACTOR = 1.5
+# set minimum amount of monthly data before taking account for slope
+MIN_ENTRY_SLOPE = 5

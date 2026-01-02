@@ -247,6 +247,7 @@ if wishlist:
 
     # --- Use average monthly savings instead of income ---
     WMA_N = len(config.WMA_WEIGHTS)
+    monthly_summary = monthly_summary.head(-1)
     latest_incomes = monthly_summary["amount_income"].tail(WMA_N)
     latest_expenses = monthly_summary["amount_expense"].tail(WMA_N)
     latest_savings = latest_incomes - latest_expenses
@@ -270,20 +271,26 @@ if wishlist:
     next_month_index = monthly_summary["month_index"].iloc[-1] + 1
     trend_adjusted_savings = intercept + slope * next_month_index
 
-    try:
-        cusion = avg_expense * config.CUSION_FACTOR  # pyright: ignore[reportPossiblyUnboundVariable]
-    except NameError:
-        cusion = 0
+    avg_expense = (
+        monthly_summary["amount_expense"].mean() if not monthly_summary.empty else 0
+    )
+    cusion = avg_expense * config.CUSION_FACTOR
 
-    affordable_savings = avg_monthly_savings + slope - cusion
+    if len(monthly_summary) < config.MIN_ENTRY_SLOPE:
+        slope = 0
 
-    if avg_monthly_savings <= 0:
+    affordable_savings = max(avg_monthly_savings + slope - cusion, 0)
+
+    if len(monthly_summary["amount_income"]) <= 0:
         st.warning(
             "Not enough savings data to calculate affordability. Add income and expense records first."
         )
     else:
         # --- Calculate affordability ---
-        df["months_needed"] = (df["amount"] / max(affordable_savings, 0.01)).round(2)
+        if affordable_savings == 0:
+            df["months_needed"] = 1_000_000_000
+        else:
+            df["months_needed"] = (df["amount"] / affordable_savings).round(2)
 
         def cal_estimate_time(months):
             decimals = Decimal(str(months)) % 1
@@ -299,7 +306,7 @@ if wishlist:
         def safe_est_purchase_date(months):
             if months < 1:
                 return "This Month"
-            if months > 1200:  # cap at 100 years
+            if months > 600:  # cap at 50 years
                 return "Far Future"
             now = pd.Timestamp.now()
             return (now + pd.DateOffset(months=int(months))).strftime("%Y-%m")
