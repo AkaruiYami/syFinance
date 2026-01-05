@@ -194,19 +194,25 @@
   <!-- Run locally -->
   <section class="section">
     <div class="container">
-      <h2 class="mb-4">Run Locally</h2>
-      <pre class="bg-light p-3 rounded">
+      <h2 class="mb-4 text-center">Run Locally</h2>
+      <div class="card shadow-sm mx-auto w-50">
+        <div class="card-body text-start">
+          <pre class="bg-light p-3 rounded mb-3">
 git clone https://github.com/AkaruiYami/syFinance
 cd syFinance
 pip install -r requirements.txt
 python manage.py init_db
 uv run streamlit run main.py
-    </pre>
-      <p class="text-muted">
-        Intended for local usage. No hosted demo by design.
-      </p>
+        </pre>
+
+          <p class="text-muted mb-0">
+            Intended for local usage. No hosted demo by design.
+          </p>
+        </div>
+      </div>
     </div>
   </section>
+
 
   <!-- Footer -->
   <footer class="py-4 bg-dark text-light">
