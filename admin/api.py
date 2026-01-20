@@ -22,4 +22,5 @@ def create_user(name, password, email, description):
     new_user_data["password"] = ph.hash(password)
     new_user_data["email"] = email.strip()
     new_user_data["description"] = description.strip()
-    User.new(**new_user_data)
+    user = User.new(**new_user_data)
+    user.save()
