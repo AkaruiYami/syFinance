@@ -3,7 +3,8 @@ def get_users(limit=50):
     from models.user import User
 
     if limit == 1:
-        return [User.objects().first()]
+        user = User.objects().first()
+        return [user] if user else []
 
     users = User.objects().all()
     users = users[:limit]
