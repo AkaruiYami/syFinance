@@ -32,6 +32,8 @@ with st.container():
     data = {}
     data["User ID"] = [user.id for user in users]
     data["Name"] = [user.name for user in users]
+    data["Email"] = [user.email for user in users]
+    data["Descrtiption"] = [user.description for user in users]
     df = pd.DataFrame(data)
 
     df2 = df.copy()
@@ -39,11 +41,17 @@ with st.container():
 
     edited = st.data_editor(
         df2,
-        disabled=["User ID", "Name"],  # keep columns read-only except Select
+        disabled=[
+            "User ID",
+            "Name",
+            "Email",
+            "Descrtiption",
+        ],  # keep columns read-only except Select
         hide_index=True,
     )
 
     selected_user_ids = edited.loc[edited["Select"], "User ID"].tolist()
+    selected_user_names = edited.loc[edited["Select"], "Name"].tolist()
 
     if selected_user_ids:
         st.dataframe(df[df["User ID"].isin(selected_user_ids)], hide_index=True)
@@ -77,5 +85,38 @@ def create_user_dialog():
                 st.error(f"Failed to create user: {e}")
 
 
+@st.dialog("Confirm delete")
+def delete_user_dialog(user_ids: list, user_names: list):
+    # Message
+    if len(user_names) == 1:
+        st.warning(f"Are you sure you want to delete **{user_names[0]}**?")
+    else:
+        st.warning("Are you sure you want to delete these users?")
+        for n in user_names:
+            st.write(f"- {n}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Cancel"):
+            st.rerun()
+
+    with col2:
+        if st.button("Delete", type="primary"):
+            try:
+                for uid in user_ids:
+                    api.delete_user(uid)
+                st.success("Deleted.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to delete: {e}")
+
+
 if create_button:
     create_user_dialog()
+
+
+if del_button:
+    if not selected_user_ids:
+        st.info("Select at least one user to delete.")
+    else:
+        delete_user_dialog(selected_user_ids, selected_user_names)

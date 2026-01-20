@@ -24,3 +24,11 @@ def create_user(name, password, email, description):
     new_user_data["description"] = description.strip()
     user = User.new(**new_user_data)
     user.save()
+
+
+def delete_user(user_id):
+    raise NotImplementedError
+    user = User.objects().filter(id=user_id).first()
+    if not user:
+        raise ValueError("User not found.")
+    user.save()
