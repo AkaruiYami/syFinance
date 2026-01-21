@@ -16,6 +16,13 @@ def get_users(limit: int = 50):
     return users
 
 
+def get_user(user_id: int) -> User:
+    user = User.objects().filter(id=user_id).first()
+    if not user:
+        raise ValueError("User not found.")
+    return user
+
+
 def create_user(name, password, email, description):
     ph = PasswordHasher()
 
@@ -29,11 +36,14 @@ def create_user(name, password, email, description):
 
 
 def delete_user(user_id: int):
-    user = User.objects().filter(id=user_id).first()
-    if not user:
-        raise ValueError("User not found.")
+    user = get_user(user_id)
     user.delete()
     user.save()
+
+
+def cancel_delete_user(user_id: int):
+    user = get_user(user_id)
+    delattr(user, "_marked_for_deletion")
 
 
 def validate_username_is_unique(name: str):
@@ -49,3 +59,8 @@ def is_username_valid(name: str):
     if name.lower() in caseinsensitive_invalid:
         return False
     return True
+
+
+def create_new_password(password: str):
+    ph = PasswordHasher()
+    return ph.hash(password)
