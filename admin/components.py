@@ -84,18 +84,26 @@ def edit_user(user_id: int):
             if not name:
                 st.error("Name is required.")
                 st.stop()
-            if not api.validate_username_is_unique(name):
+            if not api.validate_username_is_unique(name) and name != user.name:
                 st.error(f"Name '{name}' already exist. It must be unique.")
                 st.stop()
-            if not api.is_username_valid(name):
+            if not api.is_username_valid(name) and name != user.name:
                 st.error(
                     f"Cannot use '{name}' as your username. Choose something else."
                 )
                 st.stop()
 
+            user.name = name
+            if password:
+                user.password = password
+            if email:
+                user.email = email
+            if desc:
+                user.description = desc
+
             try:
-                api.create_user(name, password, email, desc)
-                st.success(f"User '{name}' created.")
+                user.save()
+                st.success(f"User '{name}' has been modified.")
                 st.rerun()  # refresh table + metrics
             except Exception as e:
                 st.error(f"Failed to create user: {e}")

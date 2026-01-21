@@ -16,7 +16,7 @@ def get_users(limit: int = 50):
     return users
 
 
-def get_user(user_id: int) -> User:
+def get_user(user_id: int):
     user = User.objects().filter(id=user_id).first()
     if not user:
         raise ValueError("User not found.")

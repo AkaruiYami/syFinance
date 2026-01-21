@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from admin import api
-from admin.components import create_user_dialog, delete_user_dialog
+from admin.components import create_user_dialog, delete_user_dialog, edit_user
 from utils import config
 from utils.auth import require_login
 
@@ -19,12 +19,14 @@ n_user = len(users)
 st.metric("Number of User", n_user)
 
 with st.container():
-    col1, col2, col3 = st.columns([0.1, 0.1, 0.8])
+    col1, col2, col3, col4 = st.columns([0.1, 0.1, 0.1, 0.7])
     with col1:
         del_button = st.button("Delete User")
     with col2:
         create_button = st.button("Create User")
     with col3:
+        modify_button = st.button("Modify User")
+    with col4:
         st.space("stretch")
 
 
@@ -66,3 +68,10 @@ if del_button:
         st.info("Select at least one user to delete.")
     else:
         delete_user_dialog(selected_user_ids, selected_user_names)
+
+
+if modify_button:
+    if len(selected_user_ids) != 1:
+        st.warning("Make sure to select exactly one user to modify.")
+    else:
+        edit_user(selected_user_ids[0])
