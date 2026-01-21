@@ -27,8 +27,8 @@ def create_user(name, password, email, description):
 
 
 def delete_user(user_id):
-    raise NotImplementedError
     user = User.objects().filter(id=user_id).first()
     if not user:
         raise ValueError("User not found.")
+    user.delete()
     user.save()
