@@ -60,7 +60,7 @@ with st.container():
 @st.dialog("Create User")
 def create_user_dialog():
     with st.form("create_user_form", clear_on_submit=True):
-        name = st.text_input("Name", placeholder="e.g. AkaruiYami")
+        name = st.text_input("Name", placeholder="e.g. username")
         password = st.text_input("Password", type="password")
         email = st.text_input("Email")
         desc = st.text_input("Descrtiption")
@@ -70,6 +70,14 @@ def create_user_dialog():
             name = name.strip()
             if not name:
                 st.error("Name is required.")
+                st.stop()
+            if not api.validate_username_is_unique(name):
+                st.error(f"Name '{name}' already exist. It must be unique.")
+                st.stop()
+            if not api.is_username_valid(name):
+                st.error(
+                    f"Cannot use '{name}' as your username. Choose something else."
+                )
                 st.stop()
 
             password = password.strip()
