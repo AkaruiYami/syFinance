@@ -35,7 +35,6 @@ class BaseModel(ABC):
 
     @classmethod
     def get_connection(cls) -> sqlite3.Connection:
-        import os
         import pathlib
 
         db_path = pathlib.Path(config.DB_PATH or "./data/finance.db")
@@ -125,45 +124,61 @@ class BaseModel(ABC):
         data["id"] = self.id
         return data
 
+    def delete(self):
+        """Mark this instance for deletion. Call save() to execute."""
+        if self.id is None:
+            raise ValueError("Cannot delete unsaved instance")
+        self._marked_for_deletion = True
+
     def save(self):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        fields = []
-        values = []
-        from models.field import ForeignKey
-
-        for name, field in self._fields.items():
-            if isinstance(field, ForeignKey):
-                col_name = f"{name}_id"
-                storage_name = getattr(field, "storage_name", f"_{name}_id")
-                val = getattr(self, storage_name, None)
-                fields.append(col_name)
-                values.append(val)
-            else:
-                fields.append(name)
-                values.append(getattr(self, name))
-
-        for name, field in self._fields.items():
-            if not field.null:
-                if isinstance(field, ForeignKey):
-                    storage_name = getattr(field, "storage_name", f"_{name}_id")
-                    if getattr(self, storage_name, None) is None:
-                        raise ValueError(f"Field '{name}' cannot be NULL.")
-                else:
-                    if getattr(self, name) is None:
-                        raise ValueError(f"Field '{name}' cannot be NULL.")
-
-        if self.id:
-            set_clause = ", ".join([f"{f}=?" for f in fields])
-            sql = f"UPDATE {self.table_name} SET {set_clause} WHERE id = ?"
-            cursor.execute(sql, values + [self.id])
+        if getattr(self, "_marked_for_deletion", False):
+            # Execute deletion
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(f"DELETE FROM {self.table_name} WHERE id = ?", (self.id,))
+            conn.commit()
+            self.id = None  # Mark as deleted
+            delattr(self, "_marked_for_deletion")  # Clean up flag
         else:
-            placeholders = ", ".join(["?"] * len(values))
-            sql = f"INSERT INTO {self.table_name} ({', '.join(fields)}) VALUES ({placeholders})"
-            cursor.execute(sql, values)
-            self.id = cursor.lastrowid
+            # Normal create/update logic
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            fields = []
+            values = []
+            from models.field import ForeignKey
 
-        conn.commit()
+            for name, field in self._fields.items():
+                if isinstance(field, ForeignKey):
+                    col_name = f"{name}_id"
+                    storage_name = getattr(field, "storage_name", f"_{name}_id")
+                    val = getattr(self, storage_name, None)
+                    fields.append(col_name)
+                    values.append(val)
+                else:
+                    fields.append(name)
+                    values.append(getattr(self, name))
+
+            for name, field in self._fields.items():
+                if not field.null:
+                    if isinstance(field, ForeignKey):
+                        storage_name = getattr(field, "storage_name", f"_{name}_id")
+                        if getattr(self, storage_name, None) is None:
+                            raise ValueError(f"Field '{name}' cannot be NULL.")
+                    else:
+                        if getattr(self, name) is None:
+                            raise ValueError(f"Field '{name}' cannot be NULL.")
+
+            if self.id:
+                set_clause = ", ".join([f"{f}=?" for f in fields])
+                sql = f"UPDATE {self.table_name} SET {set_clause} WHERE id = ?"
+                cursor.execute(sql, values + [self.id])
+            else:
+                placeholders = ", ".join(["?"] * len(values))
+                sql = f"INSERT INTO {self.table_name} ({', '.join(fields)}) VALUES ({placeholders})"
+                cursor.execute(sql, values)
+                self.id = cursor.lastrowid
+
+            conn.commit()
 
     @classmethod
     def from_row(cls: Type[T], row: sqlite3.Row) -> T:
