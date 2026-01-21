@@ -100,3 +100,45 @@ class QuerySet:
     def first(self):
         results = self.all(order_by="id", order="asc")
         return results[0] if results else None
+
+    def delete(self, immediate: bool = False, strict: bool = True):
+        """
+        Delete matching records.
+
+        Args:
+            immediate: If True, execute single SQL DELETE immediately.
+                      If False, return instances for individual save() calls.
+            strict: If True, prevent deletion without WHERE clause (safety guard).
+                   If False, allow deletion without filters.
+
+        Returns:
+            If immediate=True: int (number of deleted rows)
+            If immediate=False: list (instances marked for deletion)
+
+        Raises:
+            ValueError: If strict=True and no WHERE clause provided
+        """
+        if strict and not self.filters:
+            raise ValueError(
+                "Cannot delete without filters when strict=True. "
+                "Use strict=False to override or add filters."
+            )
+
+        if immediate:
+            # Single SQL execution
+            where_clause, values = self._build_where()
+            sql = f"DELETE FROM {self.model_cls.table_name}"
+            if where_clause:
+                sql += f" WHERE {where_clause}"
+
+            conn = self.model_cls.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(sql, values)
+            conn.commit()
+            return cursor.rowcount
+        else:
+            # Deferred approach
+            instances = self.all()
+            for instance in instances:
+                instance.delete()
+            return instances

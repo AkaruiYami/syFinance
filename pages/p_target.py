@@ -96,12 +96,12 @@ def wishlist_listing_section():
                 st.markdown(f"**Amount:** {config.CURRENCY} {row['amount']:.2f}")
 
                 truncated_source = truncate_text(row["source"])
-                with st.expander(f"Source (click to expand)"):
+                with st.expander("Source (click to expand)"):
                     st.write(row["source"])
                 st.write(f"Preview: {truncated_source}")
 
                 truncated_description = truncate_text(row["description"])
-                with st.expander(f"Description (click to expand)"):
+                with st.expander("Description (click to expand)"):
                     st.write(row["description"])
                 st.write(f"Preview: {truncated_description}")
 
@@ -131,6 +131,28 @@ def wishlist_listing_section():
                 st.rerun(scope="fragment")
             else:
                 st.info("No item in wishlist yet.")
+
+        if st.button("Delete"):
+            item = Wishlist.objects().filter(name=selected_item).first()
+            if item:
+                item.delete()
+                delete_user_dialog(item)
+
+
+@st.dialog("Confirm delete")
+def delete_user_dialog(item: Wishlist):
+    st.warning(f"Are you sure you want to delete **{item.name}**?")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Cancel"):
+            delattr(item, "_marked_for_deletion")  # Clean up flag
+            st.rerun()
+    with col2:
+        if st.button("Delete", type="primary"):
+            item.save()
+            st.success("Deleted.")
+            st.rerun()
 
 
 wishlist_listing_section()
