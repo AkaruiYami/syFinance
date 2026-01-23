@@ -4,9 +4,10 @@ import streamlit as st
 from admin import api
 from admin.components import create_user_dialog, delete_user_dialog, edit_user
 from utils import config
-from utils.auth import require_login
+from utils.auth import require_login, require_admin
 
 require_login()
+require_admin()
 
 st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
@@ -34,8 +35,9 @@ with st.container():
     data = {}
     data["User ID"] = [user.id for user in users]
     data["Name"] = [user.name for user in users]
-    data["Email"] = [user.email for user in users]
-    data["Descrtiption"] = [user.description for user in users]
+    data["Email"] = [user.email or "" for user in users]
+    data["Description"] = [user.description or "" for user in users]
+    data["Role"] = [user.role or "user" for user in users]
     df = pd.DataFrame(data)
 
     df2 = df.copy()
@@ -47,8 +49,8 @@ with st.container():
             "User ID",
             "Name",
             "Email",
-            "Descrtiption",
-        ],  # keep columns read-only except Select
+            "Description",
+        ],  # keep columns read-only except Select and Role
         hide_index=True,
     )
 

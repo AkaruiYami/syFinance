@@ -2,7 +2,7 @@
 import getpass
 import os
 import sys
-from argon2 import PasswordHasher, exceptions as argon2_exceptions
+from argon2 import PasswordHasher
 from utils.db import init_db, migrate_db
 
 

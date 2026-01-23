@@ -2,7 +2,6 @@ import streamlit as st
 from datetime import date, datetime
 import pandas as pd
 
-from components import paginated_table
 from utils import config
 from models.income import Income
 
