@@ -63,8 +63,6 @@ def delete_user_dialog(user_ids: list, user_names: list):
                 st.error(f"Failed to delete: {e}")
 
 
-# TODO: finish the implementation of modifying user
-# maybe we need to enable edit model attribute value
 @st.dialog("Edit user")
 def edit_user(user_id: int):
     user = api.get_user(user_id)
