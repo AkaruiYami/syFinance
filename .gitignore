@@ -16,3 +16,5 @@ data/
 
 .plans/
 AGENTS.md
+
+run-local.sh
