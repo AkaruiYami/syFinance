@@ -37,6 +37,7 @@ def login_page():
         if ph.verify(hashed_pw.strip(), password):
             st.session_state.logged_in = True
             st.session_state.user_id = user["id"]
+            st.session_state.user_role = user.get("role", "user")
             st.success("✅ Login successful!")
             st.switch_page("pages/p_summary.py")
         else:

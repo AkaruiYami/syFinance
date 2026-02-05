@@ -211,20 +211,32 @@ class BaseModel(ABC):
 
                 # Handle NOT NULL constraint
                 if not field.null:
-                    # Ask user for a default value to backfill
-                    user_val = input(
-                        f"Table '{cls.table_name}' is missing NOT NULL column '{name}'. "
-                        f"Please provide a default value: "
-                    ).strip()
-                    if not user_val:
-                        raise ValueError(
-                            f"Cannot add NOT NULL column '{name}' without a value."
-                        )
-                    col_def += f" NOT NULL DEFAULT '{user_val}'"
+                    # Use field default value for automatic migration
+                    default_val = field.default
+                    if callable(default_val):
+                        default_val = default_val()
+
+                    if default_val is not None:
+                        col_def += f" NOT NULL DEFAULT '{default_val}'"
+                    else:
+                        # Fallback: ask user for a default value to backfill
+                        user_val = input(
+                            f"Table '{cls.table_name}' is missing NOT NULL column '{name}'. "
+                            f"Please provide a default value: "
+                        ).strip()
+                        if not user_val:
+                            raise ValueError(
+                                f"Cannot add NOT NULL column '{name}' without a value."
+                            )
+                        col_def += f" NOT NULL DEFAULT '{user_val}'"
                 else:
                     # Nullable column
                     if getattr(field, "default", None) is not None:
-                        col_def += f" DEFAULT {field.default}"
+                        default_val = field.default
+                        if callable(default_val):
+                            default_val = default_val()
+                        if default_val is not None:
+                            col_def += f" DEFAULT '{default_val}'"
 
                 cursor.execute(f"ALTER TABLE {cls.table_name} ADD COLUMN {col_def}")
                 print(f"Added column '{name}' to {cls.table_name}")
