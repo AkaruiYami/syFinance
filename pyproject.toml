@@ -1,6 +1,6 @@
 [project]
 name = "syfinance"
-version = "2.1.6"
+version = "2.2.0"
 description = "A simple personal finance dashboard."
 readme = "README.md"
 requires-python = ">=3.13"
