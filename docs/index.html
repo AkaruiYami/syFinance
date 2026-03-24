@@ -6,124 +6,342 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>syFinance</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=chart_data,cognition_2,database,payments" />
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=analytics,bar_chart,database,monitoring,payments,savings,shield_lock,table_view" />
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
 
   <style>
-    body {
+    html {
       scroll-behavior: smooth;
     }
 
+    body {
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
+
+    .navbar {
+      backdrop-filter: blur(8px);
+    }
+
     .hero {
-      min-height: 80vh;
+      min-height: 88vh;
       display: flex;
       align-items: center;
-      background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+      background:
+        linear-gradient(135deg, rgba(13, 110, 253, 0.95), rgba(11, 94, 215, 0.92)),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%);
       color: white;
+      padding-top: 4rem;
     }
 
     .section {
       padding: 5rem 0;
     }
 
-    code {
-      background: #f8f9fa;
-      padding: .2rem .4rem;
-      border-radius: 4px;
+    .section-title {
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .section-subtitle {
+      color: #6b7280;
+      max-width: 760px;
+      margin: 0 auto 2.5rem;
+    }
+
+    .hero-card,
+    .feature-card,
+    .info-card,
+    .preview-card {
+      border: 0;
+      border-radius: 1rem;
+      box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.08);
+    }
+
+    .feature-card,
+    .info-card {
+      height: 100%;
+    }
+
+    .icon-badge {
+      width: 52px;
+      height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: rgba(13, 110, 253, 0.1);
+      color: #0d6efd;
+      flex-shrink: 0;
     }
 
     .material-symbols-outlined {
       font-variation-settings:
         'FILL' 0,
-        'wght' 400,
+        'wght' 500,
         'GRAD' 0,
-        'opsz' 40
+        'opsz' 40;
+      font-size: 28px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.5rem 0.9rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.95rem;
+      margin: 0.25rem;
+    }
+
+    .why-card {
+      border-radius: 1rem;
+      border: 0;
+      box-shadow: 0 0.5rem 1.25rem rgba(15, 23, 42, 0.06);
+    }
+
+    .preview-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 1rem;
+      border: 1px solid #e5e7eb;
+      background: white;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 1.25rem;
+      border-radius: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .tech-badge {
+      font-size: 0.95rem;
+      padding: 0.65rem 0.9rem;
+      border-radius: 999px;
+    }
+
+    footer a {
+      text-decoration: none;
+    }
+
+    @media (max-width: 767.98px) {
+      .hero {
+        min-height: auto;
+        padding: 7rem 0 4rem;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-opacity-75 fixed-top">
     <div class="container">
-      <a class="navbar-brand" href="#">syFinance</a>
-      <div class="ms-auto">
-        <a class="btn btn-outline-light btn-sm" href="https://github.com/AkaruiYami/syFinance" target="_blank">
+      <a class="navbar-brand fw-semibold" href="#">syFinance</a>
+      <div class="ms-auto d-flex gap-2">
+        <a class="btn btn-outline-light btn-sm" href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer">
           GitHub
         </a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <section class="hero text-center">
+  <section class="hero">
     <div class="container">
-      <h1 class="display-4 fw-bold">syFinance</h1>
-      <p class="lead mt-3">
-        A personal finance tracking and analysis tool focused on clarity,
-        affordability insights, and local-first data.
-      </p>
-      <a href="https://github.com/AkaruiYami/syFinance" target="_blank" class="btn btn-light btn-lg mt-4">
-        View Repository
-      </a>
-    </div>
-  </section>
+      <div class="row align-items-center g-5">
+        <div class="col-lg-6 text-center text-lg-start">
+          <span class="badge bg-light text-primary mb-3">Local-first finance dashboard</span>
+          <h1 class="display-4 fw-bold">syFinance</h1>
+          <p class="lead mt-3 mb-4">
+            A personal finance tracking and analysis tool that helps you record income and expenses,
+            understand savings trends, and make better affordability decisions using transparent calculations.
+          </p>
 
-  <!-- Problem -->
-  <section class="section">
-    <div class="container text-center">
-      <h2 class="mb-4">Why syFinance?</h2>
-      <p>
-        Most finance apps are cloud-based, opaque, or overkill.
-        syFinance is built to be:
-      </p>
-      <div class="col d-flex flex-column align-items-center gap-3 mt-5">
-        <div class="card w-50 shadow-sm bg-light border-primary border-3">
-          <div class="card-body">Local-first</div>
+          <div class="mb-4">
+            <span class="pill">Local-first</span>
+            <span class="pill">Transparent insights</span>
+            <span class="pill">Personal or family use</span>
+          </div>
+
+          <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+            <a href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer"
+              class="btn btn-light btn-lg">
+              View Repository
+            </a>
+            <a href="#preview" class="btn btn-outline-light btn-lg">
+              See Preview
+            </a>
+          </div>
         </div>
-        <div class="card w-50 shadow-sm bg-light border-success border-3">
-          <div class="card-body">Transparent in calculations</div>
-        </div>
-        <div class="card w-50 shadow-sm bf-light border-warning border-3">
-          <div class="card-body">Developer-friendly</div>
-        </div>
-        <div class="card w-50 shadow-sm bg-light border-info border-3">
-          <div class="card-body">Focused on actionable insights, not just charts</div>
+
+        <div class="col-lg-6">
+          <div class="card hero-card p-3 bg-white">
+            <img
+              src="https://raw.githubusercontent.com/AkaruiYami/syFinance/gh-pages/_docs/_static/_preview/dashboard.png"
+              alt="syFinance dashboard preview"
+              class="preview-img">
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Features -->
-  <section class="section bg-light">
+  <section class="section">
+    <div class="container text-center">
+      <h2 class="section-title">Why syFinance?</h2>
+      <p class="section-subtitle">
+        Most finance apps are cloud-based, opaque, or overloaded with features you may never use.
+        syFinance focuses on practical tracking and clear analysis while keeping your data local.
+      </p>
+
+      <div class="row g-4 justify-content-center">
+        <div class="col-md-6 col-lg-3">
+          <div class="card why-card h-100 border-start border-4 border-primary">
+            <div class="card-body">
+              <h5 class="mb-2">Local-first</h5>
+              <p class="mb-0 text-muted">Your finance data stays with you instead of depending on a hosted service.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="card why-card h-100 border-start border-4 border-success">
+            <div class="card-body">
+              <h5 class="mb-2">Transparent calculations</h5>
+              <p class="mb-0 text-muted">Metrics are designed to be understandable, not hidden behind black-box scoring.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="card why-card h-100 border-start border-4 border-warning">
+            <div class="card-body">
+              <h5 class="mb-2">Developer-friendly</h5>
+              <p class="mb-0 text-muted">Simple Python-based stack that is easy to inspect, modify, and extend.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="card why-card h-100 border-start border-4 border-info">
+            <div class="card-body">
+              <h5 class="mb-2">Actionable insights</h5>
+              <p class="mb-0 text-muted">Built to help with decisions, not just display charts and numbers.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="preview" class="section bg-light">
     <div class="container">
-      <h2 class="mb-5 text-center">Core Features</h2>
+      <div class="text-center">
+        <h2 class="section-title">Project Preview</h2>
+        <p class="section-subtitle">
+          A quick look at the dashboard and the kind of interface syFinance provides.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="card preview-card p-3 h-100">
+            <img
+              src="https://raw.githubusercontent.com/AkaruiYami/syFinance/gh-pages/_static/_preview/dashboard-dark.png"
+              alt="syFinance dashboard screenshot"
+              class="preview-img">
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="row g-4 h-100">
+            <div class="col-12">
+              <div class="card info-card p-4">
+                <h5 class="mb-3">What you can do</h5>
+                <ul class="mb-0 text-muted">
+                  <li>Track income and expenses in one place</li>
+                  <li>Review monthly savings clearly</li>
+                  <li>Understand spending patterns</li>
+                  <li>Estimate affordability based on savings, not only income</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="card info-card p-4">
+                <h5 class="mb-3">Target use</h5>
+                <p class="mb-0 text-muted">
+                  Designed for local use with Streamlit, making it suitable for personal finance management,
+                  household tracking, or small private setups.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-title">Core Features</h2>
+        <p class="section-subtitle">
+          Focused features that support everyday tracking and practical financial analysis.
+        </p>
+      </div>
+
       <div class="row g-4">
         <div class="col-md-4">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body">
+          <div class="card feature-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
               <h5>Expense & Income Tracking</h5>
-              <p>Structured monthly summaries with clear separation of income and expenses.</p>
+              <p class="text-muted mb-0">
+                Record monthly income and expenses with clear separation for more reliable summaries.
+              </p>
             </div>
           </div>
         </div>
+
         <div class="col-md-4">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body">
+          <div class="card feature-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">analytics</span>
+              </div>
               <h5>Affordability Analysis</h5>
-              <p>Uses savings-based metrics instead of raw income to estimate affordability.</p>
+              <p class="text-muted mb-0">
+                Uses savings-oriented metrics instead of raw income alone to better reflect real affordability.
+              </p>
             </div>
           </div>
         </div>
+
         <div class="col-md-4">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body">
+          <div class="card feature-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">monitoring</span>
+              </div>
               <h5>Local Dashboard</h5>
-              <p>Designed to run locally (streamlit-based), suitable for personal or family use.</p>
+              <p class="text-muted mb-0">
+                Built with Streamlit for a practical local dashboard experience that is simple to run and extend.
+              </p>
             </div>
           </div>
         </div>
@@ -131,99 +349,116 @@
     </div>
   </section>
 
-  <!-- How it works -->
-  <section class="section">
-    <div class="container">
-      <h2 class="mb-5 text-center">How It Works</h2>
-      <div class="row g-4">
-        <div class="col-md-3">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-              <span class="material-symbols-outlined">
-                database
-              </span>
-              <p class="mt-auto mb-auto">Data is stored locally</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-              <span class="material-symbols-outlined">
-                chart_data
-              </span>
-              <p class="mt-auto mb-auto">View monthly summaries</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-              <span class="material-symbols-outlined">
-                cognition_2
-              </span>
-              <p class="mt-auto mb-auto">Implement smart insights</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex align-items-center gap-3">
-              <span class="material-symbols-outlined">
-                payments
-              </span>
-              <p class="mb-auto mt-auto">Track monthly expenses</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tech Stack -->
   <section class="section bg-light">
-    <div class="container text-center">
-      <h2 class="mb-4">Tech Stack</h2>
-      <span class="badge bg-primary m-1">Python</span>
-      <span class="badge bg-secondary m-1">Pandas</span>
-      <span class="badge bg-success m-1">Streamlit</span>
-      <span class="badge bg-dark m-1">SQLite</span>
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">
+          From data entry to analysis, syFinance keeps the flow straightforward and transparent.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="card info-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">database</span>
+              </div>
+              <h5 class="h6">Store data locally</h5>
+              <p class="text-muted mb-0">Financial records are stored locally using SQLite.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="card info-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">table_view</span>
+              </div>
+              <h5 class="h6">Build monthly summaries</h5>
+              <p class="text-muted mb-0">Income and expenses are organized into structured monthly views.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="card info-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">bar_chart</span>
+              </div>
+              <h5 class="h6">Visualize trends</h5>
+              <p class="text-muted mb-0">Charts and dashboard metrics make patterns easier to understand.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="card info-card shadow-sm">
+            <div class="card-body p-4">
+              <div class="icon-badge mb-3">
+                <span class="material-symbols-outlined">savings</span>
+              </div>
+              <h5 class="h6">Estimate affordability</h5>
+              <p class="text-muted mb-0">Savings-based analysis helps turn raw numbers into practical decisions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Run locally -->
   <section class="section">
+    <div class="container text-center">
+      <h2 class="section-title">Tech Stack</h2>
+      <p class="section-subtitle">
+        A simple stack chosen for local usability, transparency, and easy maintenance.
+      </p>
+
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        <span class="badge bg-primary tech-badge">Python</span>
+        <span class="badge bg-secondary tech-badge">Pandas</span>
+        <span class="badge bg-success tech-badge">Streamlit</span>
+        <span class="badge bg-dark tech-badge">SQLite</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-light">
     <div class="container">
-      <h2 class="mb-4 text-center">Run Locally</h2>
-      <div class="card shadow-sm mx-auto w-50">
-        <div class="card-body text-start">
-          <pre class="bg-light p-3 rounded mb-3">
-git clone https://github.com/AkaruiYami/syFinance
+      <div class="text-center">
+        <h2 class="section-title">Run Locally</h2>
+        <p class="section-subtitle">
+          syFinance is intended for local use. There is no hosted demo by design.
+        </p>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card preview-card">
+            <div class="card-body p-4">
+<pre>git clone https://github.com/AkaruiYami/syFinance
 cd syFinance
 pip install -r requirements.txt
 python manage.py init_db
-uv run streamlit run main.py
-        </pre>
-
-          <p class="text-muted mb-0">
-            Intended for local usage. No hosted demo by design.
-          </p>
+uv run streamlit run main.py</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-
-  <!-- Footer -->
   <footer class="py-4 bg-dark text-light">
     <div class="container text-center">
       <small>
         syFinance • Built by AkaruiYami •
-        <a class="text-light" href="https://github.com/AkaruiYami/syFinance">GitHub</a>
+        <a class="text-light" href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer">GitHub</a>
       </small>
     </div>
   </footer>
-
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
