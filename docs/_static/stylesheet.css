@@ -37,6 +37,21 @@ body {
   margin: 0 auto 2.5rem;
 }
 
+.hero-card {
+  position: relative;
+}
+.hero-preview-dark {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  .hero-preview-light {
+    display: none;
+  }
+  .hero-preview-dark {
+    display: block;
+  }
+}
+
 .hero-card,
 .feature-card,
 .info-card,
@@ -95,6 +110,63 @@ body {
   border-radius: 1rem;
   border: 1px solid #e5e7eb;
   background: white;
+}
+
+.gallery-img {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+.gallery-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+  margin-top: 0.6rem;
+}
+@media (prefers-color-scheme: dark) {
+  .gallery-img {
+    border-color: #334155;
+  }
+  .gallery-label {
+    color: #cbd5e1;
+  }
+}
+
+/* ── Preview carousel ── */
+.carousel-indicators button {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #9ca3af;
+}
+.carousel-indicators .active {
+  background-color: #0d6efd;
+}
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  background-color: rgba(15, 23, 42, 0.45);
+  border-radius: 50%;
+  padding: 1.5rem;
+  background-size: 50%;
+}
+.carousel-control-prev-icon:hover,
+.carousel-control-next-icon:hover {
+  background-color: rgba(15, 23, 42, 0.65);
+}
+.carousel-inner {
+  border-radius: 0.75rem;
+}
+@media (prefers-color-scheme: dark) {
+  .carousel-control-prev-icon,
+  .carousel-control-next-icon {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  .carousel-control-prev-icon:hover,
+  .carousel-control-next-icon:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
 }
 
 pre {
