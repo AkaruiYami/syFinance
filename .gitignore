@@ -4,3 +4,4 @@
 !**/docs/index.html
 !**/docs/_static/
 !**/docs/_static/**
+!**/docs/.nojekyll
