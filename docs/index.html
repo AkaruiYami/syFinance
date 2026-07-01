@@ -7,13 +7,13 @@
   <meta name="description" content="syFinance — A personal finance tracking and analysis tool. Track income, expenses, savings, and affordability locally.">
   <meta property="og:title" content="syFinance">
   <meta property="og:description" content="A personal finance tracking and analysis tool that runs locally with transparent calculations.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard.png">
+  <meta property="og:image" content="_static/_preview/dashboard.png">
   <meta property="og:url" content="https://akaruiyami.github.io/syFinance/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="syFinance">
   <meta name="twitter:description" content="A personal finance tracking and analysis tool that runs locally with transparent calculations.">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard.png">
+  <meta name="twitter:image" content="_static/_preview/dashboard.png">
   <title>syFinance</title>
   <link rel="icon" type="image/x-icon" href="_static/favicon.ico">
 
@@ -75,10 +75,15 @@
         <div class="col-lg-6">
           <div class="card hero-card p-3 bg-white">
             <img
-              src="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard.png"
+              src="_static/_preview/dashboard.png"
               alt="syFinance dashboard preview"
               loading="lazy"
-              class="preview-img">
+              class="preview-img hero-preview-light">
+            <img
+              src="_static/_preview/dashboard-dark.png"
+              alt="syFinance dashboard preview (dark)"
+              loading="lazy"
+              class="preview-img hero-preview-dark">
           </div>
         </div>
       </div>
@@ -144,12 +149,47 @@
 
       <div class="row g-4">
         <div class="col-lg-8">
-          <div class="card preview-card p-3 h-100">
-            <img
-              src="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard-dark.png"
-              alt="syFinance dashboard screenshot"
-              loading="lazy"
-              class="preview-img">
+          <div id="previewCarousel" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-indicators">
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="0" class="active" aria-label="Slide 1"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+            </div>
+            <div class="carousel-inner">
+              <div class="carousel-item active">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/income-entry.png" alt="Income entry screen"
+                  data-dark="_static/_preview/income-entry-dark.png">
+                <div class="gallery-label">Income Entry</div>
+              </div>
+              <div class="carousel-item">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/income-graph.png" alt="Income graph screen"
+                  data-dark="_static/_preview/income-graph-dark.png">
+                <div class="gallery-label">Income Graphs</div>
+              </div>
+              <div class="carousel-item">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/transaction-history.png" alt="Transaction history screen"
+                  data-dark="_static/_preview/transaction-history-dark.png">
+                <div class="gallery-label">Transaction History</div>
+              </div>
+              <div class="carousel-item">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/advisor-screen.png" alt="Advisor screen"
+                  data-dark="_static/_preview/advisor-screen-dark.png">
+                <div class="gallery-label">Affordability Advisor</div>
+              </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#previewCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#previewCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
           </div>
         </div>
 
@@ -433,6 +473,25 @@ uv run streamlit run main.py</pre>
       btn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
+    })();
+
+    /* ── Gallery light/dark swap ── */
+    (function () {
+      const swap = () => {
+        const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.querySelectorAll('.gallery-img').forEach((img) => {
+          const darkSrc = img.getAttribute('data-dark');
+          if (dark && darkSrc && !img.src.includes('-dark')) {
+            img.setAttribute('data-light', img.src);
+            img.src = darkSrc;
+          } else if (!dark && img.getAttribute('data-light')) {
+            img.src = img.getAttribute('data-light');
+            img.removeAttribute('data-light');
+          }
+        });
+      };
+      swap();
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', swap);
     })();
   </script>
 </body>
