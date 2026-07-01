@@ -3,6 +3,4 @@
 !**/docs
 !**/docs/index.html
 !**/docs/_static/
-!**/docs/_static/_preview
-!**/docs/_static/_preview/dashboard-dark.png
-!**/docs/_static/_preview/dashboard.png
+!**/docs/_static/**

@@ -4,7 +4,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="syFinance — A personal finance tracking and analysis tool. Track income, expenses, savings, and affordability locally.">
+  <meta property="og:title" content="syFinance">
+  <meta property="og:description" content="A personal finance tracking and analysis tool that runs locally with transparent calculations.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard.png">
+  <meta property="og:url" content="https://akaruiyami.github.io/syFinance/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="syFinance">
+  <meta name="twitter:description" content="A personal finance tracking and analysis tool that runs locally with transparent calculations.">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard.png">
   <title>syFinance</title>
+  <link rel="icon" type="image/x-icon" href="_static/favicon.ico">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,143 +25,19 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
 
-  <style>
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      background-color: #f8fafc;
-      color: #1f2937;
-    }
-
-    .navbar {
-      backdrop-filter: blur(8px);
-    }
-
-    .hero {
-      min-height: 88vh;
-      display: flex;
-      align-items: center;
-      background:
-        linear-gradient(135deg, rgba(13, 110, 253, 0.95), rgba(11, 94, 215, 0.92)),
-        radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%);
-      color: white;
-      padding-top: 4rem;
-    }
-
-    .section {
-      padding: 5rem 0;
-    }
-
-    .section-title {
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-
-    .section-subtitle {
-      color: #6b7280;
-      max-width: 760px;
-      margin: 0 auto 2.5rem;
-    }
-
-    .hero-card,
-    .feature-card,
-    .info-card,
-    .preview-card {
-      border: 0;
-      border-radius: 1rem;
-      box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.08);
-    }
-
-    .feature-card,
-    .info-card {
-      height: 100%;
-    }
-
-    .icon-badge {
-      width: 52px;
-      height: 52px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px;
-      background: rgba(13, 110, 253, 0.1);
-      color: #0d6efd;
-      flex-shrink: 0;
-    }
-
-    .material-symbols-outlined {
-      font-variation-settings:
-        'FILL' 0,
-        'wght' 500,
-        'GRAD' 0,
-        'opsz' 40;
-      font-size: 28px;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 0.5rem 0.9rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 0.95rem;
-      margin: 0.25rem;
-    }
-
-    .why-card {
-      border-radius: 1rem;
-      border: 0;
-      box-shadow: 0 0.5rem 1.25rem rgba(15, 23, 42, 0.06);
-    }
-
-    .preview-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 1rem;
-      border: 1px solid #e5e7eb;
-      background: white;
-    }
-
-    pre {
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: #111827;
-      color: #e5e7eb;
-      padding: 1.25rem;
-      border-radius: 1rem;
-      font-size: 0.95rem;
-    }
-
-    .tech-badge {
-      font-size: 0.95rem;
-      padding: 0.65rem 0.9rem;
-      border-radius: 999px;
-    }
-
-    footer a {
-      text-decoration: none;
-    }
-
-    @media (max-width: 767.98px) {
-      .hero {
-        min-height: auto;
-        padding: 7rem 0 4rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="_static/stylesheet.css">
 </head>
 
 <body>
 
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-opacity-75 fixed-top">
     <div class="container">
-      <a class="navbar-brand fw-semibold" href="#">syFinance</a>
+      <a class="navbar-brand fw-semibold" href="#">
+        <img src="_static/logo.png" alt="syFinance logo" height="40" class="me-2">
+        syFinance
+      </a>
       <div class="ms-auto d-flex gap-2">
-        <a class="btn btn-outline-light btn-sm" href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer">
+        <a class="btn btn-outline-light btn-sm" href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer" aria-label="View syFinance on GitHub">
           GitHub
         </a>
       </div>
@@ -176,10 +63,10 @@
 
           <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
             <a href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer"
-              class="btn btn-light btn-lg">
+              class="btn btn-light btn-lg" aria-label="View syFinance repository on GitHub">
               View Repository
             </a>
-            <a href="#preview" class="btn btn-outline-light btn-lg">
+            <a href="#preview" class="btn btn-outline-light btn-lg" aria-label="See project preview">
               See Preview
             </a>
           </div>
@@ -190,6 +77,7 @@
             <img
               src="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard.png"
               alt="syFinance dashboard preview"
+              loading="lazy"
               class="preview-img">
           </div>
         </div>
@@ -197,7 +85,7 @@
     </div>
   </section>
 
-  <section class="section">
+  <section id="why" class="section reveal">
     <div class="container text-center">
       <h2 class="section-title">Why syFinance?</h2>
       <p class="section-subtitle">
@@ -245,7 +133,7 @@
     </div>
   </section>
 
-  <section id="preview" class="section bg-light">
+  <section id="preview" class="section bg-light reveal">
     <div class="container">
       <div class="text-center">
         <h2 class="section-title">Project Preview</h2>
@@ -260,6 +148,7 @@
             <img
               src="https://raw.githubusercontent.com/AkaruiYami/syFinance/refs/heads/gh-pages/docs/_static/_preview/dashboard-dark.png"
               alt="syFinance dashboard screenshot"
+              loading="lazy"
               class="preview-img">
           </div>
         </div>
@@ -294,7 +183,7 @@
     </div>
   </section>
 
-  <section class="section">
+  <section id="features" class="section reveal">
     <div class="container">
       <div class="text-center">
         <h2 class="section-title">Core Features</h2>
@@ -308,7 +197,7 @@
           <div class="card feature-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">payments</span>
+                <span class="material-symbols-outlined" aria-hidden="true">payments</span>
               </div>
               <h5>Expense & Income Tracking</h5>
               <p class="text-muted mb-0">
@@ -322,7 +211,7 @@
           <div class="card feature-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">analytics</span>
+                <span class="material-symbols-outlined" aria-hidden="true">analytics</span>
               </div>
               <h5>Affordability Analysis</h5>
               <p class="text-muted mb-0">
@@ -336,7 +225,7 @@
           <div class="card feature-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">monitoring</span>
+                <span class="material-symbols-outlined" aria-hidden="true">monitoring</span>
               </div>
               <h5>Local Dashboard</h5>
               <p class="text-muted mb-0">
@@ -349,7 +238,7 @@
     </div>
   </section>
 
-  <section class="section bg-light">
+  <section id="how-it-works" class="section bg-light reveal">
     <div class="container">
       <div class="text-center">
         <h2 class="section-title">How It Works</h2>
@@ -363,7 +252,7 @@
           <div class="card info-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">database</span>
+                <span class="material-symbols-outlined" aria-hidden="true">database</span>
               </div>
               <h5 class="h6">Store data locally</h5>
               <p class="text-muted mb-0">Financial records are stored locally using SQLite.</p>
@@ -375,7 +264,7 @@
           <div class="card info-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">table_view</span>
+                <span class="material-symbols-outlined" aria-hidden="true">table_view</span>
               </div>
               <h5 class="h6">Build monthly summaries</h5>
               <p class="text-muted mb-0">Income and expenses are organized into structured monthly views.</p>
@@ -387,7 +276,7 @@
           <div class="card info-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">bar_chart</span>
+                <span class="material-symbols-outlined" aria-hidden="true">bar_chart</span>
               </div>
               <h5 class="h6">Visualize trends</h5>
               <p class="text-muted mb-0">Charts and dashboard metrics make patterns easier to understand.</p>
@@ -399,7 +288,7 @@
           <div class="card info-card shadow-sm">
             <div class="card-body p-4">
               <div class="icon-badge mb-3">
-                <span class="material-symbols-outlined">savings</span>
+                <span class="material-symbols-outlined" aria-hidden="true">savings</span>
               </div>
               <h5 class="h6">Estimate affordability</h5>
               <p class="text-muted mb-0">Savings-based analysis helps turn raw numbers into practical decisions.</p>
@@ -410,7 +299,7 @@
     </div>
   </section>
 
-  <section class="section">
+  <section id="tech-stack" class="section reveal">
     <div class="container text-center">
       <h2 class="section-title">Tech Stack</h2>
       <p class="section-subtitle">
@@ -426,7 +315,7 @@
     </div>
   </section>
 
-  <section class="section bg-light">
+  <section id="run-locally" class="section bg-light reveal">
     <div class="container">
       <div class="text-center">
         <h2 class="section-title">Run Locally</h2>
@@ -437,32 +326,115 @@
 
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <div class="card preview-card">
-            <div class="card-body p-4">
+          <div class="card preview-card overflow-hidden">
+          <div class="card-body p-0">
+            <div class="d-flex border-bottom px-4 pt-3 pb-0 bg-dark">
+              <ul class="nav nav-tabs border-0 code-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="pip-tab" data-bs-toggle="tab"
+                          data-bs-target="#pip" type="button" role="tab"
+                          aria-controls="pip" aria-selected="true">pip</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="uv-tab" data-bs-toggle="tab"
+                          data-bs-target="#uv" type="button" role="tab"
+                          aria-controls="uv" aria-selected="false">uv</button>
+                </li>
+              </ul>
+            </div>
+            <div class="tab-content">
+              <div class="tab-pane active code-pane" id="pip" role="tabpanel" aria-labelledby="pip-tab">
 <pre>git clone https://github.com/AkaruiYami/syFinance
 cd syFinance
 pip install -r requirements.txt
 python manage.py init_db
+python -m streamlit run main.py</pre>
+              </div>
+              <div class="tab-pane code-pane" id="uv" role="tabpanel" aria-labelledby="uv-tab">
+<pre>git clone https://github.com/AkaruiYami/syFinance
+cd syFinance
+uv sync
+python manage.py init_db
 uv run streamlit run main.py</pre>
+              </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
   </section>
 
-  <footer class="py-4 bg-dark text-light">
-    <div class="container text-center">
-      <small>
-        syFinance • Built by AkaruiYami •
-        <a class="text-light" href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer">GitHub</a>
-      </small>
+  <footer class="py-5 bg-dark text-light">
+    <div class="container">
+      <div class="row g-4 justify-content-between">
+        <div class="col-md-4">
+          <h6 class="fw-semibold mb-2">syFinance</h6>
+          <p class="small text-secondary mb-0">
+            A personal finance tracking and analysis tool focused on transparent, local-first insights.
+          </p>
+        </div>
+        <div class="col-md-2">
+          <div class="footer-heading">Quick links</div>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-1"><a class="text-light" href="#features">Features</a></li>
+            <li class="mb-1"><a class="text-light" href="#how-it-works">How it works</a></li>
+            <li class="mb-1"><a class="text-light" href="#run-locally">Run locally</a></li>
+          </ul>
+        </div>
+        <div class="col-md-2">
+          <div class="footer-heading">Connect</div>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-1">
+              <a class="text-light" href="https://github.com/AkaruiYami/syFinance" target="_blank" rel="noopener noreferrer" aria-label="syFinance on GitHub">
+                GitHub
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <hr class="my-4 border-secondary">
+      <div class="text-center small text-secondary">
+        syFinance • Built by AkaruiYami
+      </div>
     </div>
   </footer>
+
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
     crossorigin="anonymous"></script>
+
+  <script>
+    /* ── Scroll reveal ── */
+    (function () {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+    })();
+
+    /* ── Back to top ── */
+    (function () {
+      const btn = document.getElementById('backToTop');
+      window.addEventListener('scroll', () => {
+        btn.classList.toggle('show', window.scrollY > window.innerHeight * 0.6);
+      });
+      btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    })();
+  </script>
 </body>
 
 </html>
