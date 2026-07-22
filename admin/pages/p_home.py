@@ -50,7 +50,8 @@ with st.container():
             "Name",
             "Email",
             "Description",
-        ],  # keep columns read-only except Select and Role
+            "Role",
+        ],  # keep columns read-only except Select
         hide_index=True,
     )
 
