@@ -5,9 +5,11 @@
 import pathlib
 
 import streamlit as st
+from argon2 import PasswordHasher
 from utils import config
 from utils.auth import is_admin
 from utils.db import init_db
+from admin import api
 from models.user import User
 
 # Bootstrap: ensure DB directory exists and tables are created on every startup
@@ -36,6 +38,52 @@ target_page = st.Page("./pages/p_target.py", title="Target", icon=":material/tar
 # loan_page = st.Pretricted=Noneage("./pages/p_loan.py", title="Loan", icon=":material/credit_score:")
 
 admin_page = st.Page("./admin/pages/p_home.py", title="Admin")
+
+
+def first_run_setup():
+    """Show signup screen when no users exist yet."""
+    if User.objects().all():
+        return  # Users exist, skip
+
+    st.title("Welcome to syFinance")
+    st.markdown("Create your admin account to get started.")
+
+    with st.form("first_run_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        confirm = st.text_input("Confirm Password", type="password")
+        submitted = st.form_submit_button("Create Account")
+
+        if submitted:
+            username = username.strip()
+            if not username:
+                st.error("Username is required.")
+            elif not api.is_username_valid(username):
+                st.error(
+                    f"Cannot use '{username}' as a username. Choose something else."
+                )
+            elif not password:
+                st.error("Password is required.")
+            elif password != confirm:
+                st.error("Passwords do not match.")
+            else:
+                try:
+                    ph = PasswordHasher()
+                    user = User.new(
+                        name=username,
+                        password=ph.hash(password),
+                        role="admin",
+                    )
+                    user.save()
+                    st.session_state.logged_in = True
+                    st.session_state.user_id = user.id
+                    st.session_state.user_role = "admin"
+                    st.success("Account created! Redirecting...")
+                    st.switch_page("pages/p_summary.py")
+                except Exception as e:
+                    st.error(f"Failed to create account: {e}")
+
+    st.stop()  # Block navigation until signup is complete
 
 
 def admin_setup():
@@ -88,6 +136,9 @@ pg_dict = {
     "Tools": [advisor_page, target_page],
     "User": [login_page],
 }
+
+# First-run: show signup if no users exist (blocks until complete)
+first_run_setup()
 
 # Check for admin setup if needed
 admin_setup()
