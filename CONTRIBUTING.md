@@ -29,23 +29,20 @@ Thank you for your interest in contributing to **syFinance**, a personal finance
    ```
 
 3. **Install dependencies**  
-   Make sure you have Python 3.8+ and Streamlit installed.  
+   Make sure you have Python 3.13+ and Streamlit installed.  
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Initialize the database**  
-
-   ```bash
-   uv run manage.py init_db
-   ```
-
-5. **Run the app**  
+4. **Run the app**  
 
    ```bash
    uv run streamlit run main.py
    ```
+
+   On first launch, the app will prompt you to create an admin account.
+   No database setup step is required — the app bootstraps everything automatically.
 
 ## ✨ How to Contribute
 

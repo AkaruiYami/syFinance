@@ -14,58 +14,43 @@ Good for looking over monthly budget.
 
 ---
 
-# Before starting the app
+# How to Run
 
-There several thing need to be done before starting the app.
-
-## Step 1: Install the dependencies
+## Quick Start
 
 Option 1: Using `pip`
 
 ```bash
+git clone https://github.com/AkaruiYami/syFinance.git
+cd syFinance
 pip install -r requirements.txt
+python -m streamlit run main.py
 ```
 
-Option 2: Using UV (recommended)
+Option 2: Using `uv` (recommended)
 
 ```bash
+git clone https://github.com/AkaruiYami/syFinance.git
+cd syFinance
 uv sync
-```
-
-## Step 2: Initialize the database (IMPORTANT)
-
-Now, you need to initialize the database. Don't worry, there already helper command for this. Just run:
-
-```bash
-python manage.py init_db
-```
-
-or if you are using `uv`
-
-```bash
-uv run manage.py init_db
-```
-
-Running this command will prompt you to create a user. After it is completed, now you are ready to start the app!
-
-# How to RUN
-
-To run the app is very simple! Just run:
-
-```bash
-streamlit run main.py 
-```
-
-or if you are using `uv`:
-
-```bash
 uv run streamlit run main.py
 ```
 
-Upon executing the command, you will see the `Local URL` and `Network URL`. Open them in your browser. And yes, if you have other device that connected to the same network, you can copy the `Network URL` and paste it into the browser in that device to access the app.
+On first launch, you'll be prompted to create your admin account.
+No database setup or environment file is required — the app bootstraps everything automatically.
 
 > [!Note]
 > If you are using linux just run `./run.sh` script to run the app.
+
+## Optional: CLI Tools
+
+`manage.py` provides optional commands for advanced use:
+
+```bash
+uv run manage.py init_db       # Create DB + first user from terminal
+uv run manage.py add_new_user  # Add a user from terminal
+uv run manage.py migrate       # Run schema migrations
+```
 
 ---
 
