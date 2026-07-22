@@ -186,6 +186,7 @@ else:
             f"⚠️ You're saving only {savings_rate:.1f}%. Try reducing unnecessary expenses."
         )
 
+    # Default values outside conditional to avoid NameError on empty data
     percent_top = 0
     top_category = "None"
     # Insight 2: Top spending category
@@ -246,10 +247,12 @@ if wishlist:
     df["amount"] = df["amount"].astype(float)
 
     # --- Use average monthly savings instead of income ---
+    # Exclude the current (possibly incomplete) month from savings/WMA calculations
+    # so that projections are based only on fully elapsed months.
     WMA_N = len(config.WMA_WEIGHTS)
-    monthly_summary = monthly_summary.head(-1)
-    latest_incomes = monthly_summary["amount_income"].tail(WMA_N)
-    latest_expenses = monthly_summary["amount_expense"].tail(WMA_N)
+    complete_months = monthly_summary.head(-1) if len(monthly_summary) > 1 else monthly_summary.copy()
+    latest_incomes = complete_months["amount_income"].tail(WMA_N)
+    latest_expenses = complete_months["amount_expense"].tail(WMA_N)
     latest_savings = latest_incomes - latest_expenses
     n_savings = len(latest_savings)
     if n_savings < WMA_N:
@@ -259,40 +262,43 @@ if wishlist:
     )
 
     # compute trend adjustment
-    monthly_summary["savings"] = (
-        monthly_summary["amount_income"] - monthly_summary["amount_expense"]
+    complete_months["savings"] = (
+        complete_months["amount_income"] - complete_months["amount_expense"]
     )
-    monthly_summary = monthly_summary.sort_values("month").reset_index(drop=True)
-    monthly_summary["month_index"] = np.arange(1, len(monthly_summary) + 1)
-    _x = monthly_summary["month_index"]
-    _y = monthly_summary["savings"]
+    complete_months = complete_months.sort_values("month").reset_index(drop=True)
+    complete_months["month_index"] = np.arange(1, len(complete_months) + 1)
+    _x = complete_months["month_index"]
+    _y = complete_months["savings"]
     slope, intercept = np.polyfit(_x, _y, 1)
     # forecast savings for next month
-    next_month_index = monthly_summary["month_index"].iloc[-1] + 1
+    next_month_index = complete_months["month_index"].iloc[-1] + 1
     trend_adjusted_savings = intercept + slope * next_month_index
 
     avg_expense = (
-        monthly_summary["amount_expense"].mean() if not monthly_summary.empty else 0
+        complete_months["amount_expense"].mean() if not complete_months.empty else 0
     )
     cusion = avg_expense * config.CUSION_FACTOR
 
-    if len(monthly_summary) < config.MIN_ENTRY_SLOPE:
+    if len(complete_months) < config.MIN_ENTRY_SLOPE:
         slope = 0
 
     affordable_savings = max(avg_monthly_savings + slope - cusion, 0)
 
-    if len(monthly_summary["amount_income"]) <= 0:
+    if len(complete_months["amount_income"]) <= 0:
         st.warning(
             "Not enough savings data to calculate affordability. Add income and expense records first."
         )
     else:
         # --- Calculate affordability ---
+        AFFORDABILITY_CAP = 1200  # 100 years — anything beyond this is effectively unaffordable
         if affordable_savings == 0:
-            df["months_needed"] = 1_000_000_000
+            df["months_needed"] = AFFORDABILITY_CAP
         else:
-            df["months_needed"] = (df["amount"] / affordable_savings).round(2)
+            df["months_needed"] = (df["amount"] / affordable_savings).clip(upper=AFFORDABILITY_CAP).round(2)
 
         def cal_estimate_time(months):
+            if months >= AFFORDABILITY_CAP:
+                return "Not affordable"
             decimals = Decimal(str(months)) % 1
             today = datetime.now()
             num_days = calendar.monthrange(today.year, today.month)[1]
@@ -306,8 +312,8 @@ if wishlist:
         def safe_est_purchase_date(months):
             if months < 1:
                 return "This Month"
-            if months > 600:  # cap at 50 years
-                return "Far Future"
+            if months >= AFFORDABILITY_CAP:
+                return "N/A — not affordable at current savings rate"
             now = pd.Timestamp.now()
             return (now + pd.DateOffset(months=int(months))).strftime("%Y-%m")
 
@@ -353,17 +359,21 @@ if wishlist:
             amt = row["amount"]
             m = row["months_needed"]
 
-            if m <= 1:
+            if m >= AFFORDABILITY_CAP:
+                st.error(
+                    f"**{n}** ({fmt(amt)}) is not affordable at your current savings rate of {fmt(affordable_savings)}/month."
+                )
+            elif m <= 1:
                 st.success(
                     f"You can afford **{n}** this month. Estimated cost: {fmt(amt)}."
                 )
             elif m <= 3:
                 st.info(
-                    f"You're close to affording **{n}** — about **{m} months** needed."
+                    f"You're close to affording **{n}** — about **{cal_estimate_time(m)}** needed."
                 )
             else:
                 st.warning(
-                    f"**{n}** will require about **{m} months** of savings. Consider prioritizing smaller goals first."
+                    f"**{n}** will require about **{cal_estimate_time(m)}** of savings. Consider prioritizing smaller goals first."
                 )
 
 else:
