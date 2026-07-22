@@ -104,9 +104,6 @@ def edit_user(user_id: int):
         )
         final_role = custom_role.strip() if custom_role.strip() else selected_role
 
-        if password:
-            password = api.create_new_password(password.strip())
-
         submitted = st.form_submit_button("Save")
         if submitted:
             name = name.strip()
@@ -131,7 +128,7 @@ def edit_user(user_id: int):
 
             user.name = name
             if password:
-                user.password = password
+                user.password = api.create_new_password(password.strip())
             user.email = email.strip() if email else ""
             user.description = desc.strip() if desc else ""
             user.role = final_role
