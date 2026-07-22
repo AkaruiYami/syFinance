@@ -236,7 +236,32 @@ else:
                 f"Consider reviewing your **{top_category}** expenses — they represent a large portion of your spending."
             )
 
-    # Insight 3: Recommendations
+    # Insight 3: Burn rate / savings runway
+    if total_expenses > monthly_income and monthly_income > 0:
+        excess = total_expenses - monthly_income
+        # Compute cumulative savings from complete months
+        if not monthly_summary.empty:
+            prev = monthly_summary[monthly_summary["month_str"] < this_month]
+            if not prev.empty:
+                cum_savings = (prev["amount_income"] - prev["amount_expense"]).sum()
+            else:
+                cum_savings = 0
+        else:
+            cum_savings = 0
+
+        if cum_savings > 0 and excess > 0:
+            runway_months = cum_savings / excess
+            st.error(
+                f"🚀 **Burn Rate Alert:** You're spending {fmt(excess)}/month more than you earn. "
+                f"At this rate, your savings of {fmt(cum_savings)} would last **{runway_months:.1f} months**."
+            )
+        else:
+            st.error(
+                f"🚀 **Burn Rate Alert:** You're spending {fmt(excess)}/month more than you earn "
+                f"with no savings buffer."
+            )
+
+    # Insight 4: Recommendations
     st.divider()
     st.subheader("📋 Recommendations")
 
@@ -550,6 +575,38 @@ wishlist = [wish.to_dict() for wish in wishlist]
 if wishlist:
     df = pd.DataFrame(wishlist)
     df["amount"] = df["amount"].astype(float)
+
+    # --- Income Stability Check ---
+    if not df_income.empty and "month" in df_income.columns:
+        income_monthly_totals = df_income.groupby("month")["amount"].sum()
+        if len(income_monthly_totals) > 1:
+            income_mean = income_monthly_totals.mean()
+            income_std = income_monthly_totals.std()
+            income_cv = (income_std / income_mean) if income_mean > 0 else 0
+
+            if income_cv < 0.1:
+                income_stability = "Stable"
+                stability_color = "success"
+            elif income_cv < 0.25:
+                income_stability = "Moderately Variable"
+                stability_color = "info"
+            else:
+                income_stability = "Unstable"
+                stability_color = "warning"
+
+            getattr(st, stability_color)(
+                f"💰 Income stability: **{income_stability}** "
+                f"(coefficient of variation: {income_cv:.1%}). "
+                + (
+                    "Affordability estimates should be reliable."
+                    if income_cv < 0.1
+                    else "Affordability estimates may vary month to month."
+                )
+            )
+        else:
+            income_stability = "Insufficient Data"
+    else:
+        income_stability = "No Data"
 
     # --- Use average monthly savings instead of income ---
     # Exclude the current (possibly incomplete) month from savings/WMA calculations
