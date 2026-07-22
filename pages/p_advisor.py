@@ -122,19 +122,29 @@ st.divider()
 # --- Calculate Current Month and Averages ---
 now = datetime.now()
 this_month = now.strftime("%Y-%m")
+days_in_month = calendar.monthrange(now.year, now.month)[1]
+days_elapsed = now.day  # 1-indexed: today counts as a full day
 
 if not monthly_summary.empty:
     # Convert Period to string for filtering
     monthly_summary["month_str"] = monthly_summary["month"].astype(str)
     current_row = monthly_summary[monthly_summary["month_str"] == this_month]
 
-    # Current month values
+    # Current month raw values (month to date)
     if not current_row.empty:
         monthly_income = current_row["amount_income"].values[0]  # pyright: ignore
         total_expenses = current_row["amount_expense"].values[0]  # pyright: ignore
         net_savings = monthly_income - total_expenses
     else:
         monthly_income = total_expenses = net_savings = 0
+
+    # Prorated projection: extrapolate MTD spending to full month
+    if days_elapsed > 0:
+        prorated_expenses = (total_expenses / days_elapsed) * days_in_month
+        prorated_income = (monthly_income / days_elapsed) * days_in_month
+    else:
+        prorated_expenses = total_expenses
+        prorated_income = monthly_income
 
     # Previous months average
     previous_months = monthly_summary[monthly_summary["month_str"] < this_month]
@@ -152,7 +162,29 @@ if not monthly_summary.empty:
         avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
 else:
     monthly_income = total_expenses = net_savings = 0
+    prorated_expenses = prorated_income = 0
     avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
+
+st.subheader("📊 Month-to-Date Progress")
+st.caption(f"Day {days_elapsed} of {days_in_month} — {days_elapsed / days_in_month:.0%} through the month")
+
+col1, col2, col3 = st.columns(3)
+col1.metric(
+    "Income (MTD)",
+    fmt(monthly_income),
+    delta=f"Projected: {fmt(prorated_income)}" if days_elapsed > 0 and prorated_income != monthly_income else None,
+)
+col2.metric(
+    "Spending (MTD)",
+    fmt(total_expenses),
+    delta=f"Projected: {fmt(prorated_expenses)}" if days_elapsed > 0 and prorated_expenses != total_expenses else None,
+    delta_color="inverse",
+)
+col3.metric(
+    "Savings (MTD)",
+    fmt(net_savings),
+    delta=f"Projected: {fmt(prorated_income - prorated_expenses)}" if days_elapsed > 0 else None,
+)
 
 st.subheader("📊 Averages from Previous Months")
 col1, col2, col3 = st.columns(3)
@@ -231,7 +263,108 @@ else:
         st.success("Everything looks balanced! Keep up your good financial habits. 💪")
 
 st.divider()
+
+# --- Category Trends (Month-over-Month) ---
+st.subheader("📊 Category Trends")
+
+if not df_expenses.empty and "month" in df_expenses.columns:
+    cat_monthly = (
+        df_expenses.groupby(["month", "category"])["amount"]
+        .sum()
+        .reset_index()
+        .sort_values("month")
+    )
+
+    # Determine which month to analyze (current if available, else most recent)
+    available_months = sorted(cat_monthly["month"].unique())
+    latest_month = max(available_months)
+
+    current_cat = cat_monthly[cat_monthly["month"] == latest_month].set_index("category")["amount"]
+    prev_month = available_months[-2] if len(available_months) >= 2 else None
+    prev_cat = (
+        cat_monthly[cat_monthly["month"] == prev_month]["amount"].values[0]
+        if prev_month is not None
+        else None
+    )
+
+    # Trailing 3-month average per category (excluding latest month)
+    trailing_3m = cat_monthly[cat_monthly["month"].isin(available_months[-4:-1])]
+    avg_3m = trailing_3m.groupby("category")["amount"].mean() if not trailing_3m.empty else pd.Series(dtype=float)
+
+    trend_rows = []
+    for cat, amount in current_cat.items():
+        # vs previous month
+        if prev_cat is not None and prev_month is not None:
+            prev_val = cat_monthly[
+                (cat_monthly["month"] == prev_month) & (cat_monthly["category"] == cat)
+            ]["amount"]
+            prev_amount = prev_val.values[0] if not prev_val.empty else 0
+            pct_prev = ((amount - prev_amount) / prev_amount * 100) if prev_amount > 0 else None
+        else:
+            pct_prev = None
+
+        # vs 3-month average
+        avg_3m_val = avg_3m.get(cat, 0)
+        pct_3m = ((amount - avg_3m_val) / avg_3m_val * 100) if avg_3m_val > 0 else None
+
+        trend_rows.append({
+            "Category": cat,
+            "Latest": amount,
+            "Prev Month": prev_amount if prev_cat is not None else None,
+            "Δ% (MoM)": pct_prev,
+            "3M Avg": avg_3m_val if avg_3m_val > 0 else None,
+            "Δ% (3M)": pct_3m,
+        })
+
+    if trend_rows:
+        df_trends = pd.DataFrame(trend_rows)
+
+        # Display formatted table
+        display_trends = df_trends.copy()
+        display_trends["Latest"] = display_trends["Latest"].apply(fmt)
+        if "Prev Month" in display_trends.columns:
+            display_trends["Prev Month"] = display_trends["Prev Month"].apply(
+                lambda x: fmt(x) if pd.notna(x) and x is not None else "—"
+            )
+        display_trends["Δ% (MoM)"] = display_trends["Δ% (MoM)"].apply(
+            lambda x: f"{x:+.1f}%" if pd.notna(x) and x is not None else "—"
+        )
+        display_trends["3M Avg"] = display_trends["3M Avg"].apply(
+            lambda x: fmt(x) if pd.notna(x) and x is not None else "—"
+        )
+        display_trends["Δ% (3M)"] = display_trends["Δ% (3M)"].apply(
+            lambda x: f"{x:+.1f}%" if pd.notna(x) and x is not None else "—"
+        )
+
+        st.dataframe(display_trends, use_container_width=True, hide_index=True)
+
+        # Flag large spikes
+        spikes = df_trends[
+            ((df_trends["Δ% (MoM)"].fillna(0).abs() > config.CATEGORY_SPIKE_THRESHOLD))
+            | ((df_trends["Δ% (3M)"].fillna(0).abs() > config.CATEGORY_SPIKE_THRESHOLD))
+        ]
+        for _, row in spikes.iterrows():
+            cat_name = row["Category"]
+            latest = row["Latest"]
+            if pd.notna(row["Δ% (MoM)"]) and abs(row["Δ% (MoM)"]) > config.CATEGORY_SPIKE_THRESHOLD:
+                direction = "increased" if row["Δ% (MoM)"] > 0 else "decreased"
+                st.warning(
+                    f"**{cat_name}** {direction} by {abs(row['Δ% (MoM)']):.0f}% vs last month "
+                    f"({fmt(row['Prev Month'] if pd.notna(row['Prev Month']) else 0)} → {fmt(latest)})."
+                )
+            elif pd.notna(row["Δ% (3M)"]) and abs(row["Δ% (3M)"]) > config.CATEGORY_SPIKE_THRESHOLD:
+                direction = "above" if row["Δ% (3M)"] > 0 else "below"
+                st.info(
+                    f"**{cat_name}** is {abs(row['Δ% (3M)']):.0f}% {direction} your 3-month average "
+                    f"({fmt(row['3M Avg'])} → {fmt(latest)})."
+                )
+    else:
+        st.info("Not enough category data to compute trends.")
+else:
+    st.info("Add expenses with categories to see spending trends.")
+
 # --- Analyze the feasibility of buying the item based on your average monthly income ---
+st.divider()
 st.subheader("🎯 Goals")
 
 wishlist = (
