@@ -135,7 +135,6 @@ def wishlist_listing_section():
         if st.button("Delete"):
             item = Wishlist.objects().filter(name=selected_item).first()
             if item:
-                item.delete()
                 delete_user_dialog(item)
 
 
@@ -146,10 +145,10 @@ def delete_user_dialog(item: Wishlist):
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Cancel"):
-            delattr(item, "_marked_for_deletion")  # Clean up flag
             st.rerun()
     with col2:
         if st.button("Delete", type="primary"):
+            item.delete()
             item.save()
             st.success("Deleted.")
             st.rerun()
