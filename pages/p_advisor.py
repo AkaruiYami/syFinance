@@ -203,6 +203,7 @@ if monthly_income == 0:
 else:
     savings_rate = (net_savings / monthly_income) * 100 if monthly_income > 0 else 0
     spending_rate = (total_expenses / monthly_income) * 100 if monthly_income > 0 else 0
+    affordable_savings = 0  # will be computed later in Goals section if wishlist exists
 
     # Insight 1: Savings rate
     if savings_rate >= 20:
@@ -261,24 +262,78 @@ else:
                 f"with no savings buffer."
             )
 
-    # Insight 4: Recommendations
+    # Insight 4: Recommendations (data-specific)
     st.divider()
     st.subheader("📋 Recommendations")
 
     recs = []
+
+    # Savings rate recommendations
     if savings_rate < 10:
-        recs.append("💡 Try setting an automatic savings transfer right after payday.")
-    if total_expenses > monthly_income:
+        target_savings = monthly_income * 0.2
+        shortfall = target_savings - net_savings
         recs.append(
-            "⚠️ Your expenses exceed your income — consider reviewing subscriptions or large purchases."
+            f"💡 Your savings rate is {savings_rate:.1f}% — aim for 20% ({fmt(target_savings)}/month). "
+            f"Reducing spending by {fmt(shortfall)}/month would get you there."
         )
+    elif savings_rate >= 20:
+        annual_savings = net_savings * 12
+        recs.append(
+            f"✅ At your current {savings_rate:.1f}% savings rate, you'd save ~{fmt(annual_savings)} this year. "
+            f"Consider investing part of your savings for better long-term growth."
+        )
+
+    # Income vs expenses
+    if total_expenses > monthly_income and monthly_income > 0:
+        excess_pct = ((total_expenses - monthly_income) / monthly_income) * 100
+        recs.append(
+            f"⚠️ Your expenses exceed your income by {excess_pct:.0f}% — "
+            f"review subscriptions or large purchases to close the {fmt(total_expenses - monthly_income)} gap."
+        )
+
+    # Top category recommendation
     if not df_expenses.empty and percent_top > 40:
+        top_cat_txn_count = len(df_expenses[df_expenses["category"] == top_category])
         recs.append(
-            f"💡 Reduce {top_category} spending by 10% to save an extra {config.CURRENCY} {total_expenses * 0.1:.2f} next month."
+            f"💡 **{top_category}** dominates your spending at {percent_top:.0f}% "
+            f"({top_cat_txn_count} transactions). A 10% reduction would save {fmt(total_expenses * 0.1)}/month."
         )
-    if savings_rate > 20:
+
+    # Recurring charges advisory (if detected earlier)
+    if not df_expenses.empty and "month" in df_expenses.columns:
+        df_recur_check = df_expenses.copy()
+        df_recur_check["norm_desc"] = df_recur_check["description"].fillna("").str.strip().str.lower()
+        df_recur_check["norm_amt"] = df_recur_check["amount"].round(2)
+        df_recur_check["month_key"] = df_recur_check["month"].astype(str)
+        recur_check = (
+            df_recur_check.groupby(["norm_desc", "norm_amt"])
+            .agg(distinct_months=("month_key", "nunique"))
+            .reset_index()
+        )
+        recur_check = recur_check[
+            (recur_check["distinct_months"] >= config.RECURRING_MIN_MONTHS)
+            & (recur_check["norm_desc"] != "")
+        ]
+        if not recur_check.empty and monthly_income > 0:
+            total_recurring = 0.0
+            for _, rrow in recur_check.iterrows():
+                g = df_recur_check[
+                    (df_recur_check["norm_desc"] == rrow["norm_desc"])
+                    & (df_recur_check["norm_amt"] == rrow["norm_amt"])
+                ]
+                total_recurring += g["amount"].sum() / rrow["distinct_months"]
+            recurring_pct = (total_recurring / monthly_income) * 100
+            if recurring_pct > 10:
+                recs.append(
+                    f"📌 Recurring charges total ~{fmt(total_recurring)}/month "
+                    f"({recurring_pct:.0f}% of income). Review if all are still needed."
+                )
+
+    # Projected savings for next goal
+    if net_savings > 0 and affordable_savings > 0:
         recs.append(
-            "✅ You can consider investing part of your savings for better long-term growth."
+            f"🎯 At {fmt(affordable_savings)}/month affordable savings, "
+            f"you could save ~{fmt(affordable_savings * 12)} over the next year."
         )
 
     if recs:
