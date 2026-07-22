@@ -363,6 +363,53 @@ if not df_expenses.empty and "month" in df_expenses.columns:
 else:
     st.info("Add expenses with categories to see spending trends.")
 
+# --- "Other" Category Black Hole Flag ---
+if not df_expenses.empty and "month" in df_expenses.columns:
+    latest_month_exp = df_expenses[df_expenses["month"] == df_expenses["month"].max()]
+    total_latest = latest_month_exp["amount"].sum()
+    other_spend = latest_month_exp[latest_month_exp["category"] == config.OTHER_CATEGORY_NAME]["amount"].sum()
+    if total_latest > 0 and other_spend > 0:
+        other_pct = (other_spend / total_latest) * 100
+        if other_pct > config.OTHER_CATEGORY_PCT_THRESHOLD:
+            st.warning(
+                f"⚠️ **\"{config.OTHER_CATEGORY_NAME}\"** makes up **{other_pct:.0f}%** of your latest month's spending "
+                f"({fmt(other_spend)} of {fmt(total_latest)}). "
+                f"Consider recategorizing these transactions for better financial insights."
+            )
+
+# --- Anomaly Detection (Unusual Transactions) ---
+if not df_expenses.empty and len(df_expenses) > 5:
+    cat_stats = df_expenses.groupby("category")["amount"].agg(["mean", "std"]).dropna()
+    cat_stats = cat_stats[cat_stats["std"] > 0]
+
+    anomalies = []
+    for cat, row in cat_stats.iterrows():
+        cat_txns = df_expenses[df_expenses["category"] == cat]
+        threshold = row["mean"] + config.ANOMALY_STD_THRESHOLD * row["std"]
+        unusual = cat_txns[cat_txns["amount"] > threshold]
+        for _, txn in unusual.iterrows():
+            z_score = (txn["amount"] - row["mean"]) / row["std"]
+            anomalies.append({
+                "Date": txn["date"].strftime("%Y-%m-%d") if hasattr(txn["date"], "strftime") else str(txn["date"]),
+                "Category": cat,
+                "Description": txn.get("description", "") or "",
+                "Amount": txn["amount"],
+                "Category Avg": row["mean"],
+                "Z-score": z_score,
+            })
+
+    if anomalies:
+        st.divider()
+        st.subheader("⚠️ Unusual Transactions")
+        st.caption(
+            f"Transactions exceeding {config.ANOMALY_STD_THRESHOLD} standard deviations above their category average."
+        )
+        df_anomalies = pd.DataFrame(anomalies).sort_values("Z-score", ascending=False)
+        df_anomalies["Amount"] = df_anomalies["Amount"].apply(fmt)
+        df_anomalies["Category Avg"] = df_anomalies["Category Avg"].apply(fmt)
+        df_anomalies["Z-score"] = df_anomalies["Z-score"].apply(lambda z: f"{z:.1f}σ")
+        st.dataframe(df_anomalies, use_container_width=True, hide_index=True)
+
 # --- Analyze the feasibility of buying the item based on your average monthly income ---
 st.divider()
 st.subheader("🎯 Goals")
