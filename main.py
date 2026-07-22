@@ -2,9 +2,22 @@
 # Copyright (c) 2025 Yami
 # See LICENSE file for details.
 
+import pathlib
+
 import streamlit as st
+from utils import config
 from utils.auth import is_admin
+from utils.db import init_db
 from models.user import User
+
+# Bootstrap: ensure DB directory exists and tables are created on every startup
+try:
+    db_path = pathlib.Path(config.DB_PATH)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    init_db(verbose=False)
+except Exception as e:
+    st.error(f"Failed to initialize the database: {e}")
+    st.stop()
 
 login_page = st.Page("./pages/p_login.py", title="Login", icon=":material/login:")
 dashboard_page = st.Page(
