@@ -416,7 +416,7 @@ if not df_expenses.empty and "month" in df_expenses.columns:
             lambda x: f"{x:+.1f}%" if pd.notna(x) and x is not None else "—"
         )
 
-        st.dataframe(display_trends, use_container_width=True, hide_index=True)
+        st.dataframe(display_trends, width="stretch", hide_index=True)
 
         # Flag large spikes
         spikes = df_trends[
@@ -488,7 +488,7 @@ if not df_expenses.empty and len(df_expenses) > 5:
         df_anomalies["Amount"] = df_anomalies["Amount"].apply(fmt)
         df_anomalies["Category Avg"] = df_anomalies["Category Avg"].apply(fmt)
         df_anomalies["Z-score"] = df_anomalies["Z-score"].apply(lambda z: f"{z:.1f}σ")
-        st.dataframe(df_anomalies, use_container_width=True, hide_index=True)
+        st.dataframe(df_anomalies, width="stretch", hide_index=True)
 
 # --- Recurring Expense / Subscription Detection ---
 if not df_expenses.empty and "month" in df_expenses.columns:
@@ -551,7 +551,7 @@ if not df_expenses.empty and "month" in df_expenses.columns:
         st.caption(
             f"Detected {len(recurring)} recurring charge(s) totaling **{fmt(total_monthly_recurring)}/month**."
         )
-        st.dataframe(pd.DataFrame(recur_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(recur_rows), width="stretch", hide_index=True)
     else:
         st.info("No recurring charges detected across your transaction history.")
 
@@ -599,7 +599,7 @@ if not df_expenses.empty and "date" in df_expenses.columns:
             )
             .properties(height=250)
         )
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, width="stretch")
 
         # Weekend vs weekday comparison
         weekday_total = dow_summary[dow_summary["day_num"] < 5]["Total Spent"].sum()
