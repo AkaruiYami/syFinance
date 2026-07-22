@@ -410,6 +410,131 @@ if not df_expenses.empty and len(df_expenses) > 5:
         df_anomalies["Z-score"] = df_anomalies["Z-score"].apply(lambda z: f"{z:.1f}σ")
         st.dataframe(df_anomalies, use_container_width=True, hide_index=True)
 
+# --- Recurring Expense / Subscription Detection ---
+if not df_expenses.empty and "month" in df_expenses.columns:
+    st.divider()
+    st.subheader("📌 Recurring Charges")
+
+    # Normalize descriptions for matching: lowercase, strip whitespace
+    df_recur = df_expenses.copy()
+    df_recur["norm_desc"] = df_recur["description"].fillna("").str.strip().str.lower()
+    df_recur["norm_amt"] = df_recur["amount"].round(2)
+    df_recur["month_key"] = df_recur["month"].astype(str)
+
+    # Group by normalized (description, amount) and count distinct months
+    recur_groups = (
+        df_recur.groupby(["norm_desc", "norm_amt"])
+        .agg(
+            distinct_months=("month_key", "nunique"),
+            txn_count=("id", "count"),
+            sample_desc=("description", "first"),
+            category=("category", "first"),
+        )
+        .reset_index()
+    )
+
+    # Only keep groups that appear in >= N distinct months (and have a non-empty description)
+    recurring = recur_groups[
+        (recur_groups["distinct_months"] >= config.RECURRING_MIN_MONTHS)
+        & (recur_groups["norm_desc"] != "")
+    ].sort_values("norm_amt", ascending=False)
+
+    if not recurring.empty:
+        total_monthly_recurring = 0.0
+        recur_rows = []
+        for _, row in recurring.iterrows():
+            # Estimate monthly cost: total spent / number of distinct months
+            group_txns = df_recur[
+                (df_recur["norm_desc"] == row["norm_desc"])
+                & (df_recur["norm_amt"] == row["norm_amt"])
+            ]
+            total_spent = group_txns["amount"].sum()
+            monthly_cost = total_spent / row["distinct_months"]
+            total_monthly_recurring += monthly_cost
+
+            # Determine frequency label
+            if row["distinct_months"] <= 2:
+                freq = "Bi-monthly"
+            elif row["distinct_months"] <= 6:
+                freq = "Quarterly-ish"
+            else:
+                freq = "Monthly"
+
+            recur_rows.append({
+                "Description": row["sample_desc"] or row["norm_desc"],
+                "Category": row["category"],
+                "Amount": fmt(row["norm_amt"]),
+                "Frequency": f"{freq} ({row['distinct_months']} mo / {row['txn_count']} txns)",
+                "Monthly Cost": fmt(monthly_cost),
+            })
+
+        st.caption(
+            f"Detected {len(recurring)} recurring charge(s) totaling **{fmt(total_monthly_recurring)}/month**."
+        )
+        st.dataframe(pd.DataFrame(recur_rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("No recurring charges detected across your transaction history.")
+
+# --- Weekly / Day-of-Week Spending Pattern ---
+if not df_expenses.empty and "date" in df_expenses.columns:
+    st.divider()
+    st.subheader("📅 Spending by Day of Week")
+
+    # Allow user to select which categories to include
+    all_categories = sorted(df_expenses["category"].unique()) if "category" in df_expenses.columns else []
+    default_cats = [c for c in ["Food", "Entertainment"] if c in all_categories] or all_categories[:3]
+    selected_cats = st.multiselect(
+        "Filter by category",
+        options=all_categories,
+        default=default_cats,
+        key="dow_categories",
+    )
+
+    if selected_cats:
+        dow_df = df_expenses[df_expenses["category"].isin(selected_cats)].copy()
+        dow_df["day_name"] = dow_df["date"].dt.day_name()
+        dow_df["day_num"] = dow_df["date"].dt.dayofweek  # 0=Mon, 6=Sun
+
+        dow_summary = (
+            dow_df.groupby(["day_num", "day_name"])["amount"]
+            .agg(["sum", "count"])
+            .reset_index()
+            .sort_values("day_num")
+        )
+        dow_summary.columns = ["day_num", "Day", "Total Spent", "Transactions"]
+
+        chart = (
+            alt.Chart(dow_summary)
+            .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
+            .encode(
+                x=alt.X("Day:N", sort=None, title="Day of Week"),
+                y=alt.Y("Total Spent:Q", title=f"Total Spent ({config.CURRENCY})"),
+                color=alt.Color(
+                    "Day:N",
+                    sort=None,
+                    legend=None,
+                    scale=alt.Scale(scheme="tableau10"),
+                ),
+                tooltip=["Day", "Total Spent", "Transactions"],
+            )
+            .properties(height=250)
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+        # Weekend vs weekday comparison
+        weekday_total = dow_summary[dow_summary["day_num"] < 5]["Total Spent"].sum()
+        weekend_total = dow_summary[dow_summary["day_num"] >= 5]["Total Spent"].sum()
+        weekday_days = min(5, days_in_month)
+        weekend_days = days_in_month - weekday_days
+        weekday_avg = weekday_total / weekday_days if weekday_days > 0 else 0
+        weekend_avg = weekend_total / weekend_days if weekend_days > 0 else 0
+
+        col1, col2 = st.columns(2)
+        col1.metric("Weekday Avg/Day", fmt(weekday_avg))
+        col2.metric("Weekend Avg/Day", fmt(weekend_avg))
+    else:
+        st.info("Select categories to view spending patterns.")
+
 # --- Analyze the feasibility of buying the item based on your average monthly income ---
 st.divider()
 st.subheader("🎯 Goals")
