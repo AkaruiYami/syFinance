@@ -198,7 +198,7 @@ class BaseModel(ABC):
         return instance
 
     @classmethod
-    def migrate_table(cls):
+    def migrate_table(cls, interactive: bool = False):
         conn = cls.get_connection()
         cursor = conn.cursor()
 
@@ -218,8 +218,8 @@ class BaseModel(ABC):
 
                     if default_val is not None:
                         col_def += f" NOT NULL DEFAULT '{default_val}'"
-                    else:
-                        # Fallback: ask user for a default value to backfill
+                    elif interactive:
+                        # CLI path: prompt user for a default value
                         user_val = input(
                             f"Table '{cls.table_name}' is missing NOT NULL column '{name}'. "
                             f"Please provide a default value: "
@@ -229,6 +229,12 @@ class BaseModel(ABC):
                                 f"Cannot add NOT NULL column '{name}' without a value."
                             )
                         col_def += f" NOT NULL DEFAULT '{user_val}'"
+                    else:
+                        raise RuntimeError(
+                            f"Cannot auto-migrate: table '{cls.table_name}' is missing "
+                            f"NOT NULL column '{name}' with no default value. "
+                            f"Run 'manage.py migrate' interactively to provide a value."
+                        )
                 else:
                     # Nullable column
                     if getattr(field, "default", None) is not None:

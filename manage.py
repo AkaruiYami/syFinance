@@ -122,7 +122,7 @@ def init_db_wrapped():
 
 def migrate_db_wrapped():
     init_db(False)
-    migrate_db()
+    migrate_db(interactive=True)
 
 
 def add_new_user():
