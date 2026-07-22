@@ -1,5 +1,6 @@
 import streamlit as st
 from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from models.user import User
 
 st.set_page_config(page_title="Login", layout="wide")
@@ -34,13 +35,14 @@ def login_page():
         user = user.to_dict()
         hashed_pw = user["password"]
 
-        if ph.verify(hashed_pw.strip(), password):
+        try:
+            ph.verify(hashed_pw.strip(), password)
             st.session_state.logged_in = True
             st.session_state.user_id = user["id"]
             st.session_state.user_role = user.get("role", "user")
             st.success("✅ Login successful!")
             st.switch_page("pages/p_summary.py")
-        else:
+        except VerifyMismatchError:
             st.error("❌ Invalid username or password.")
 
 
