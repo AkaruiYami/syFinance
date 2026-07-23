@@ -25,13 +25,6 @@ st.markdown("Plan and view what the best for your savings.")
 st.divider()
 
 
-def fmt(amount):
-    try:
-        return f"{config.CURRENCY} {float(amount):.2f}"
-    except NameError:
-        return f"{config.CURRENCY} 0.00"
-
-
 # --- Load Data ---
 transactions = (
     Transactions.objects().filter(user_id=int(st.session_state.user_id)).all()
@@ -155,9 +148,9 @@ if not monthly_summary.empty:
             previous_months["amount_income"] - previous_months["amount_expense"]
         ).mean()
 
-        avg_income_str = f"{config.CURRENCY} {avg_income:.2f}"
-        avg_expense_str = f"{config.CURRENCY} {avg_expense:.2f}"
-        avg_savings_str = f"{config.CURRENCY} {avg_savings:.2f}"
+        avg_income_str = config.fmt(avg_income)
+        avg_expense_str = config.fmt(avg_expense)
+        avg_savings_str = config.fmt(avg_savings)
     else:
         avg_income_str = avg_expense_str = avg_savings_str = "No previous data"
 else:
@@ -171,19 +164,19 @@ st.caption(f"Day {days_elapsed} of {days_in_month} — {days_elapsed / days_in_m
 col1, col2, col3 = st.columns(3)
 col1.metric(
     "Income (MTD)",
-    fmt(monthly_income),
-    delta=f"Projected: {fmt(prorated_income)}" if days_elapsed > 0 and prorated_income != monthly_income else None,
+    config.fmt(monthly_income),
+    delta=f"Projected: {config.fmt(prorated_income)}" if days_elapsed > 0 and prorated_income != monthly_income else None,
 )
 col2.metric(
     "Spending (MTD)",
-    fmt(total_expenses),
-    delta=f"Projected: {fmt(prorated_expenses)}" if days_elapsed > 0 and prorated_expenses != total_expenses else None,
+    config.fmt(total_expenses),
+    delta=f"Projected: {config.fmt(prorated_expenses)}" if days_elapsed > 0 and prorated_expenses != total_expenses else None,
     delta_color="inverse",
 )
 col3.metric(
     "Savings (MTD)",
-    fmt(net_savings),
-    delta=f"Projected: {fmt(prorated_income - prorated_expenses)}" if days_elapsed > 0 else None,
+    config.fmt(net_savings),
+    delta=f"Projected: {config.fmt(prorated_income - prorated_expenses)}" if days_elapsed > 0 else None,
 )
 
 st.subheader("📊 Averages from Previous Months")
@@ -253,12 +246,12 @@ else:
         if cum_savings > 0 and excess > 0:
             runway_months = cum_savings / excess
             st.error(
-                f"🚀 **Burn Rate Alert:** You're spending {fmt(excess)}/month more than you earn. "
-                f"At this rate, your savings of {fmt(cum_savings)} would last **{runway_months:.1f} months**."
+                f"🚀 **Burn Rate Alert:** You're spending {config.fmt(excess)}/month more than you earn. "
+                f"At this rate, your savings of {config.fmt(cum_savings)} would last **{runway_months:.1f} months**."
             )
         else:
             st.error(
-                f"🚀 **Burn Rate Alert:** You're spending {fmt(excess)}/month more than you earn "
+                f"🚀 **Burn Rate Alert:** You're spending {config.fmt(excess)}/month more than you earn "
                 f"with no savings buffer."
             )
 
@@ -273,13 +266,13 @@ else:
         target_savings = monthly_income * 0.2
         shortfall = target_savings - net_savings
         recs.append(
-            f"💡 Your savings rate is {savings_rate:.1f}% — aim for 20% ({fmt(target_savings)}/month). "
-            f"Reducing spending by {fmt(shortfall)}/month would get you there."
+            f"💡 Your savings rate is {savings_rate:.1f}% — aim for 20% ({config.fmt(target_savings)}/month). "
+            f"Reducing spending by {config.fmt(shortfall)}/month would get you there."
         )
     elif savings_rate >= 20:
         annual_savings = net_savings * 12
         recs.append(
-            f"✅ At your current {savings_rate:.1f}% savings rate, you'd save ~{fmt(annual_savings)} this year. "
+            f"✅ At your current {savings_rate:.1f}% savings rate, you'd save ~{config.fmt(annual_savings)} this year. "
             f"Consider investing part of your savings for better long-term growth."
         )
 
@@ -288,7 +281,7 @@ else:
         excess_pct = ((total_expenses - monthly_income) / monthly_income) * 100
         recs.append(
             f"⚠️ Your expenses exceed your income by {excess_pct:.0f}% — "
-            f"review subscriptions or large purchases to close the {fmt(total_expenses - monthly_income)} gap."
+            f"review subscriptions or large purchases to close the {config.fmt(total_expenses - monthly_income)} gap."
         )
 
     # Top category recommendation
@@ -296,7 +289,7 @@ else:
         top_cat_txn_count = len(df_expenses[df_expenses["category"] == top_category])
         recs.append(
             f"💡 **{top_category}** dominates your spending at {percent_top:.0f}% "
-            f"({top_cat_txn_count} transactions). A 10% reduction would save {fmt(total_expenses * 0.1)}/month."
+            f"({top_cat_txn_count} transactions). A 10% reduction would save {config.fmt(total_expenses * 0.1)}/month."
         )
 
     # Recurring charges advisory (if detected earlier)
@@ -325,15 +318,15 @@ else:
             recurring_pct = (total_recurring / monthly_income) * 100
             if recurring_pct > 10:
                 recs.append(
-                    f"📌 Recurring charges total ~{fmt(total_recurring)}/month "
+                    f"📌 Recurring charges total ~{config.fmt(total_recurring)}/month "
                     f"({recurring_pct:.0f}% of income). Review if all are still needed."
                 )
 
     # Projected savings for next goal
     if net_savings > 0 and affordable_savings > 0:
         recs.append(
-            f"🎯 At {fmt(affordable_savings)}/month affordable savings, "
-            f"you could save ~{fmt(affordable_savings * 12)} over the next year."
+            f"🎯 At {config.fmt(affordable_savings)}/month affordable savings, "
+            f"you could save ~{config.fmt(affordable_savings * 12)} over the next year."
         )
 
     if recs:
@@ -401,16 +394,16 @@ if not df_expenses.empty and "month" in df_expenses.columns:
 
         # Display formatted table
         display_trends = df_trends.copy()
-        display_trends["Latest"] = display_trends["Latest"].apply(fmt)
+        display_trends["Latest"] = display_trends["Latest"].apply(config.fmt)
         if "Prev Month" in display_trends.columns:
             display_trends["Prev Month"] = display_trends["Prev Month"].apply(
-                lambda x: fmt(x) if pd.notna(x) and x is not None else "—"
+                lambda x: config.fmt(x) if pd.notna(x) and x is not None else "—"
             )
         display_trends["Δ% (MoM)"] = display_trends["Δ% (MoM)"].apply(
             lambda x: f"{x:+.1f}%" if pd.notna(x) and x is not None else "—"
         )
         display_trends["3M Avg"] = display_trends["3M Avg"].apply(
-            lambda x: fmt(x) if pd.notna(x) and x is not None else "—"
+            lambda x: config.fmt(x) if pd.notna(x) and x is not None else "—"
         )
         display_trends["Δ% (3M)"] = display_trends["Δ% (3M)"].apply(
             lambda x: f"{x:+.1f}%" if pd.notna(x) and x is not None else "—"
@@ -430,13 +423,13 @@ if not df_expenses.empty and "month" in df_expenses.columns:
                 direction = "increased" if row["Δ% (MoM)"] > 0 else "decreased"
                 st.warning(
                     f"**{cat_name}** {direction} by {abs(row['Δ% (MoM)']):.0f}% vs last month "
-                    f"({fmt(row['Prev Month'] if pd.notna(row['Prev Month']) else 0)} → {fmt(latest)})."
+                    f"({config.fmt(row['Prev Month'] if pd.notna(row['Prev Month']) else 0)} → {config.fmt(latest)})."
                 )
             elif pd.notna(row["Δ% (3M)"]) and abs(row["Δ% (3M)"]) > config.CATEGORY_SPIKE_THRESHOLD:
                 direction = "above" if row["Δ% (3M)"] > 0 else "below"
                 st.info(
                     f"**{cat_name}** is {abs(row['Δ% (3M)']):.0f}% {direction} your 3-month average "
-                    f"({fmt(row['3M Avg'])} → {fmt(latest)})."
+                    f"({config.fmt(row['3M Avg'])} → {config.fmt(latest)})."
                 )
     else:
         st.info("Not enough category data to compute trends.")
@@ -453,7 +446,7 @@ if not df_expenses.empty and "month" in df_expenses.columns:
         if other_pct > config.OTHER_CATEGORY_PCT_THRESHOLD:
             st.warning(
                 f"⚠️ **\"{config.OTHER_CATEGORY_NAME}\"** makes up **{other_pct:.0f}%** of your latest month's spending "
-                f"({fmt(other_spend)} of {fmt(total_latest)}). "
+                f"({config.fmt(other_spend)} of {config.fmt(total_latest)}). "
                 f"Consider recategorizing these transactions for better financial insights."
             )
 
@@ -485,8 +478,8 @@ if not df_expenses.empty and len(df_expenses) > 5:
             f"Transactions exceeding {config.ANOMALY_STD_THRESHOLD} standard deviations above their category average."
         )
         df_anomalies = pd.DataFrame(anomalies).sort_values("Z-score", ascending=False)
-        df_anomalies["Amount"] = df_anomalies["Amount"].apply(fmt)
-        df_anomalies["Category Avg"] = df_anomalies["Category Avg"].apply(fmt)
+        df_anomalies["Amount"] = df_anomalies["Amount"].apply(config.fmt)
+        df_anomalies["Category Avg"] = df_anomalies["Category Avg"].apply(config.fmt)
         df_anomalies["Z-score"] = df_anomalies["Z-score"].apply(lambda z: f"{z:.1f}σ")
         st.dataframe(df_anomalies, width="stretch", hide_index=True)
 
@@ -543,13 +536,13 @@ if not df_expenses.empty and "month" in df_expenses.columns:
             recur_rows.append({
                 "Description": row["sample_desc"] or row["norm_desc"],
                 "Category": row["category"],
-                "Amount": fmt(row["norm_amt"]),
+                "Amount": config.fmt(row["norm_amt"]),
                 "Frequency": f"{freq} ({row['distinct_months']} mo / {row['txn_count']} txns)",
-                "Monthly Cost": fmt(monthly_cost),
+                "Monthly Cost": config.fmt(monthly_cost),
             })
 
         st.caption(
-            f"Detected {len(recurring)} recurring charge(s) totaling **{fmt(total_monthly_recurring)}/month**."
+            f"Detected {len(recurring)} recurring charge(s) totaling **{config.fmt(total_monthly_recurring)}/month**."
         )
         st.dataframe(pd.DataFrame(recur_rows), width="stretch", hide_index=True)
     else:
@@ -610,8 +603,8 @@ if not df_expenses.empty and "date" in df_expenses.columns:
         weekend_avg = weekend_total / weekend_days if weekend_days > 0 else 0
 
         col1, col2 = st.columns(2)
-        col1.metric("Weekday Avg/Day", fmt(weekday_avg))
-        col2.metric("Weekend Avg/Day", fmt(weekend_avg))
+        col1.metric("Weekday Avg/Day", config.fmt(weekday_avg))
+        col2.metric("Weekend Avg/Day", config.fmt(weekend_avg))
     else:
         st.info("Select categories to view spending patterns.")
 
@@ -738,7 +731,7 @@ if wishlist:
         df["est_purchase_date"] = df["months_needed"].apply(safe_est_purchase_date)
 
         # Display with formatted currency
-        df["amount_fmt"] = df["amount"].apply(fmt)
+        df["amount_fmt"] = df["amount"].apply(config.fmt)
 
         st.markdown(
             "### Wishlist Affordability Based on Your **Average Monthly Savings**"
@@ -746,14 +739,14 @@ if wishlist:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.caption(
-                f"Weighted Moving Average Monthly Savings: {fmt(avg_monthly_savings)}"
+                f"Weighted Moving Average Monthly Savings: {config.fmt(avg_monthly_savings)}"
             )
         with col2:
-            st.caption(f"Saving Trend per Month: {fmt(slope)}")
+            st.caption(f"Saving Trend per Month: {config.fmt(slope)}")
         with col3:
-            st.caption(f"Cusion: {fmt(cusion)}")
+            st.caption(f"Cusion: {config.fmt(cusion)}")
         with col4:
-            st.caption(f"Affordable Savings: {fmt(affordable_savings)}")
+            st.caption(f"Affordable Savings: {config.fmt(affordable_savings)}")
 
         if affordable_savings <= 0:
             st.error("Not enough savings. Consider improve your monthly savings first.")
@@ -778,11 +771,11 @@ if wishlist:
 
             if m >= AFFORDABILITY_CAP:
                 st.error(
-                    f"**{n}** ({fmt(amt)}) is not affordable at your current savings rate of {fmt(affordable_savings)}/month."
+                    f"**{n}** ({config.fmt(amt)}) is not affordable at your current savings rate of {config.fmt(affordable_savings)}/month."
                 )
             elif m <= 1:
                 st.success(
-                    f"You can afford **{n}** this month. Estimated cost: {fmt(amt)}."
+                    f"You can afford **{n}** this month. Estimated cost: {config.fmt(amt)}."
                 )
             elif m <= 3:
                 st.info(
