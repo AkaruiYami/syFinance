@@ -38,6 +38,7 @@ target_page = st.Page("./pages/p_target.py", title="Target", icon=":material/tar
 # loan_page = st.Pretricted=Noneage("./pages/p_loan.py", title="Loan", icon=":material/credit_score:")
 
 admin_page = st.Page("./admin/pages/p_home.py", title="Admin")
+admin_data_page = st.Page("./admin/pages/p_data.py", title="Data Management")
 
 
 def first_run_setup():
@@ -145,7 +146,7 @@ admin_setup()
 
 try:
     if st.session_state.logged_in and is_admin():
-        pg_dict["Admin"] = [admin_page]
+        pg_dict["Admin"] = [admin_page, admin_data_page]
 except AttributeError:
     pass
 finally:

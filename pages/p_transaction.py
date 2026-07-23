@@ -1,9 +1,10 @@
 import pandas as pd
 import streamlit as st
-from datetime import date
+from datetime import date, datetime
 
 from utils import config
 from models.transaction import Transactions
+from utils.data_io import export_model_csv
 
 
 from utils.auth import require_login
@@ -65,6 +66,16 @@ if records:
 
     # paginated_table(df, MAX_ITEM_PER_PAGE, table_id="trans_rec")
     st.dataframe(df)
+
+    st.divider()
+    st.subheader("Export Data")
+    csv_data = export_model_csv(Transactions, int(st.session_state.user_id))
+    st.download_button(
+        label="Download Transactions CSV",
+        data=csv_data,
+        file_name=f"transactions_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv",
+    )
 
 else:
     st.info("Table will display recorded transactions once persistence is added.")
