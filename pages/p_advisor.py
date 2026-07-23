@@ -684,20 +684,23 @@ if wishlist:
     )
     complete_months = complete_months.sort_values("month").reset_index(drop=True)
     complete_months["month_index"] = np.arange(1, len(complete_months) + 1)
-    _x = complete_months["month_index"]
-    _y = complete_months["savings"]
-    slope, intercept = np.polyfit(_x, _y, 1)
-    # forecast savings for next month
-    next_month_index = complete_months["month_index"].iloc[-1] + 1
+
+    if len(complete_months) < config.MIN_ENTRY_SLOPE:
+        slope, intercept = 0, avg_monthly_savings
+    else:
+        _x = complete_months["month_index"]
+        _y = complete_months["savings"]
+        slope, intercept = np.polyfit(_x, _y, 1)
+
+    next_month_index = (
+        complete_months["month_index"].iloc[-1] + 1 if not complete_months.empty else 1
+    )
     trend_adjusted_savings = intercept + slope * next_month_index
 
     avg_expense = (
         complete_months["amount_expense"].mean() if not complete_months.empty else 0
     )
     cusion = avg_expense * config.CUSION_FACTOR
-
-    if len(complete_months) < config.MIN_ENTRY_SLOPE:
-        slope = 0
 
     affordable_savings = max(avg_monthly_savings + slope - cusion, 0)
 
