@@ -24,14 +24,19 @@ with st.form("add_income", clear_on_submit=True):
     submitted = st.form_submit_button("Add Income")
 
 if submitted:
-    new_income = Income.new(
-        date=income_date,
-        amount=float(amount),
-        description=str(description),
-        user=int(st.session_state.user_id),
-    )
-    new_income.save()
-    st.success("Income recorded successfully!")
+    if amount <= 0:
+        st.warning("Amount must be greater than zero.")
+    elif not description.strip():
+        st.warning("Please add a description.")
+    else:
+        new_income = Income.new(
+            date=income_date,
+            amount=float(amount),
+            description=str(description),
+            user=int(st.session_state.user_id),
+        )
+        new_income.save()
+        st.success("Income recorded successfully!")
 
 st.divider()
 st.subheader("Income History")

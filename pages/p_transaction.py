@@ -30,15 +30,20 @@ with st.form("add_transaction", clear_on_submit=True):
     submitted = st.form_submit_button("Add Transaction")
 
 if submitted:
-    new_transaction = Transactions.new(
-        date=trans_date,
-        category=str(category),
-        amount=float(amount),
-        description=str(description),
-        user=int(st.session_state.user_id),
-    )
-    new_transaction.save()
-    st.success("Transaction added!")
+    if amount <= 0:
+        st.warning("Amount must be greater than zero.")
+    elif not description.strip():
+        st.warning("Please add a description.")
+    else:
+        new_transaction = Transactions.new(
+            date=trans_date,
+            category=str(category),
+            amount=float(amount),
+            description=str(description),
+            user=int(st.session_state.user_id),
+        )
+        new_transaction.save()
+        st.success("Transaction added!")
 
 st.divider()
 st.subheader("Transaction History")

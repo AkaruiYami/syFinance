@@ -25,8 +25,10 @@ with st.form("add_wishlist", clear_on_submit=True):
 
 if submitted and not item_name:
     st.warning("Item name cannot be empty.")
-elif submitted and not amount:
-    st.warning("Amount cannot be empty.")
+elif submitted and amount <= 0:
+    st.warning("Amount must be greater than zero.")
+elif submitted and not description.strip():
+    st.warning("Please add a description.")
 elif submitted:
     date_submitted = date.today()
     new_data = {
