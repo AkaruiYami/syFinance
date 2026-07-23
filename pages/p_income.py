@@ -4,6 +4,7 @@ import pandas as pd
 
 from utils import config
 from models.income import Income
+from utils.data_io import export_model_csv
 
 
 from utils.auth import require_login
@@ -90,6 +91,16 @@ if incomes:
     df_display["date"] = df_display["date"].dt.date
     # paginated_table(df_display, to_display=["date", "amount", "description"])
     st.dataframe(df_display[["date", "amount", "description"]])
+
+    st.divider()
+    st.subheader("Export Data")
+    csv_data = export_model_csv(Income, int(st.session_state.user_id))
+    st.download_button(
+        label="Download Income CSV",
+        data=csv_data,
+        file_name=f"income_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv",
+    )
 
     st.divider()
     st.subheader("Monthly Summary")
