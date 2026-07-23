@@ -93,7 +93,7 @@ def wishlist_listing_section():
                 # Container with border, padding, margin, and rounded corners using HTML + CSS
                 st.markdown(f"**Name:** {row['name']}")
                 st.markdown(f"**Date Created:** {row['dateCreated']}")
-                st.markdown(f"**Amount:** {config.CURRENCY} {row['amount']:.2f}")
+                st.markdown(f"**Amount:** {config.fmt(row['amount'])}")
 
                 truncated_source = truncate_text(row["source"])
                 with st.expander("Source (click to expand)"):

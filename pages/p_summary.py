@@ -79,9 +79,9 @@ total_expenses = df_expenses["amount"].sum() if not df_expenses.empty else 0.0
 monthly_income = df_income["amount"].sum() if not df_income.empty else 0.0
 
 # Format metrics
-total_expenses_str = f"{config.CURRENCY} {total_expenses:.2f}"
-monthly_income_str = f"{config.CURRENCY} {monthly_income:.2f}"
-net_savings_str = f"{config.CURRENCY} {net_savings:.2f}"
+total_expenses_str = config.fmt(total_expenses)
+monthly_income_str = config.fmt(monthly_income)
+net_savings_str = config.fmt(net_savings)
 
 # Display metrics
 col1, col2, col3 = st.columns(3)
@@ -118,9 +118,7 @@ if not df_expenses.empty:
 
     # Display table
     table_display = category_summary.copy()
-    table_display["amount"] = table_display["amount"].map(
-        lambda x: f"{config.CURRENCY} {x:.2f}"
-    )
+    table_display["amount"] = table_display["amount"].map(config.fmt)
     st.table(table_display)
 else:
     st.info("No transactions recorded this month.")

@@ -25,3 +25,10 @@ OTHER_CATEGORY_PCT_THRESHOLD = 30
 
 # Recurring charge detection: minimum distinct months to qualify
 RECURRING_MIN_MONTHS = 2
+
+
+def fmt(amount):
+    try:
+        return f"{CURRENCY} {float(amount):.2f}"
+    except (TypeError, ValueError):
+        return f"{CURRENCY} 0.00"
