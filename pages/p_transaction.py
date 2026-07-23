@@ -53,7 +53,7 @@ if records:
     df = pd.DataFrame([rec.to_dict() for rec in records])
     df = df.drop("user_id", axis=1)
     df["amount"] = (
-        df["amount"].astype(float).map(lambda x: f"{config.CURRENCY} {x:.2f}")
+        df["amount"].astype(float).map(config.fmt)
     )
     df.set_index("id", inplace=True)
     df = df.sort_values("date", ascending=False)
@@ -153,14 +153,12 @@ def summary_section():
                 .reset_index()
                 .sort_values("period")
             )
-            agg["amount"] = agg["amount"].map(lambda x: f"{config.CURRENCY} {x:.2f}")
+            agg["amount"] = agg["amount"].map(config.fmt)
             st.dataframe(agg)
 
         else:  # Show Individually
             summary_table = summary.copy()
-            summary_table["amount"] = summary_table["amount"].map(
-                lambda x: f"{config.CURRENCY} {x:.2f}"
-            )
+            summary_table["amount"] = summary_table["amount"].map(config.fmt)
             st.dataframe(summary_table)
 
     else:

@@ -81,9 +81,7 @@ if incomes:
 
     # Format for display
     df_display = df.copy()
-    df_display["amount"] = df_display["amount"].apply(
-        lambda x: f"{config.CURRENCY} {x:.2f}"
-    )
+    df_display["amount"] = df_display["amount"].apply(config.fmt)
     df_display["date"] = df_display["date"].dt.date
     # paginated_table(df_display, to_display=["date", "amount", "description"])
     st.dataframe(df_display[["date", "amount", "description"]])
@@ -97,7 +95,7 @@ if incomes:
     ]
 
     total_income = df_current_month["amount"].sum()
-    total_income_str = f"{config.CURRENCY} {total_income:.2f}"
+    total_income_str = config.fmt(total_income)
 
     st.metric("Monthly Income", total_income_str)
 
