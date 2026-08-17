@@ -142,3 +142,71 @@ def edit_user(user_id: int):
                 st.rerun()  # refresh table + metrics
             except Exception as e:
                 st.error(f"Failed to modify user: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Category dialogs
+# ---------------------------------------------------------------------------
+
+
+@st.dialog("Add Category")
+def create_category_dialog():
+    with st.form("create_category_form", clear_on_submit=True):
+        name = st.text_input("Category Name", placeholder="e.g. Groceries")
+        submitted = st.form_submit_button("Add")
+        if submitted:
+            name = name.strip()
+            if not name:
+                st.error("Category name is required.")
+                st.stop()
+            try:
+                api.create_category(name)
+                st.success(f"Category '{name}' added.")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))
+
+
+@st.dialog("Edit Category")
+def edit_category_dialog(category_id: int, current_name: str):
+    with st.form("edit_category_form"):
+        name = st.text_input("Category Name", value=current_name)
+        submitted = st.form_submit_button("Save")
+        if submitted:
+            name = name.strip()
+            if not name:
+                st.error("Category name is required.")
+                st.stop()
+            try:
+                api.update_category(category_id, name)
+                st.success(f"Category renamed to '{name}'.")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))
+
+
+@st.dialog("Confirm Delete")
+def delete_category_dialog(category_id: int, category_name: str):
+    usage = api.get_category_usage_count(category_name)
+    if usage > 0:
+        st.warning(
+            f"Cannot delete **{category_name}** — {usage} transaction(s) still use this category. "
+            "Reassign or remove those transactions first."
+        )
+        if st.button("Close"):
+            st.rerun()
+        return
+
+    st.warning(f"Are you sure you want to delete **{category_name}**?")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Cancel"):
+            st.rerun()
+    with col2:
+        if st.button("Delete", type="primary"):
+            try:
+                api.delete_category(category_id)
+                st.success(f"Category '{category_name}' deleted.")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))

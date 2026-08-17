@@ -1,10 +1,12 @@
-from typing import List
+
 from models.base import BaseModel
 
+DEFAULT_CATEGORIES = ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Other"]
 
-def init_db(verbose: bool = True) -> List[str]:
+
+def init_db(verbose: bool = True) -> list[str]:
     """
-    Create all registered model tables.
+    Create all registered model tables and seed default categories.
 
     Returns the list of table names that were created (or already existed).
     """
@@ -17,12 +19,30 @@ def init_db(verbose: bool = True) -> List[str]:
                 print(f"[{model_cls.table_name}] has been created.")
         except Exception as exc:
             print(f"Failed to create table for {model_cls.__name__}: {exc}")
+
+    _seed_default_categories(verbose=verbose)
+
     if verbose:
         print("Table creation completed.")
     return created
 
 
-def migrate_db(verbose: bool = True, interactive: bool = False) -> List[str]:
+def _seed_default_categories(verbose: bool = False):
+    """Insert the default expense categories if the table is empty."""
+    from models.category import Category
+
+    if Category.objects().first() is not None:
+        return
+
+    for name in DEFAULT_CATEGORIES:
+        cat = Category.new(name=name)
+        cat.save()
+
+    if verbose:
+        print(f"Seeded {len(DEFAULT_CATEGORIES)} default categories.")
+
+
+def migrate_db(verbose: bool = True, interactive: bool = False) -> list[str]:
     """
     Run migration for all registered model tables.
     Adds any missing columns defined in model fields.

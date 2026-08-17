@@ -1,9 +1,10 @@
 import streamlit as st
-from models.user import User
-from models.transaction import Transactions
-from models.income import Income
-from models.wishlist import Wishlist
 from argon2 import PasswordHasher
+
+from models.income import Income
+from models.transaction import Transactions
+from models.user import User
+from models.wishlist import Wishlist
 
 
 def get_users(limit: int = 50):
@@ -112,3 +113,62 @@ def update_user_role(user_id: int, new_role: str):
     current_user_id = st.session_state.get("user_id")
     if current_user_id == user_id:
         st.session_state.user_role = new_role
+
+
+# ---------------------------------------------------------------------------
+# Category CRUD
+# ---------------------------------------------------------------------------
+
+from models.category import Category
+
+
+def get_categories():
+    return Category.objects().all(order_by="name")
+
+
+def create_category(name: str):
+    name = name.strip()
+    if not name:
+        raise ValueError("Category name cannot be empty.")
+    existing = Category.objects().filter(name=name).first()
+    if existing:
+        raise ValueError(f"Category '{name}' already exists.")
+    cat = Category.new(name=name)
+    cat.save()
+    return cat
+
+
+def update_category(category_id: int, new_name: str):
+    new_name = new_name.strip()
+    if not new_name:
+        raise ValueError("Category name cannot be empty.")
+    cat = Category.objects().filter(id=category_id).first()
+    if not cat:
+        raise ValueError("Category not found.")
+    duplicate = Category.objects().filter(name=new_name).first()
+    if duplicate and duplicate.id != category_id:
+        raise ValueError(f"Category '{new_name}' already exists.")
+    old_name = cat.name
+    cat.name = new_name
+    cat.save()
+    return old_name
+
+
+def delete_category(category_id: int):
+    cat = Category.objects().filter(id=category_id).first()
+    if not cat:
+        raise ValueError("Category not found.")
+    count = get_category_usage_count(cat.name)
+    if count > 0:
+        raise ValueError(
+            f"Cannot delete '{cat.name}': {count} transaction(s) still use this category."
+        )
+    cat.delete()
+    cat.save()
+
+
+def get_category_usage_count(category_name: str) -> int:
+    rows = (
+        Transactions.objects().filter(category=category_name).all()
+    )
+    return len(rows)

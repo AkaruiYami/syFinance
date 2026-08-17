@@ -1,13 +1,13 @@
-import pandas as pd
-import streamlit as st
 from datetime import date, datetime
 
-from utils import config
+import pandas as pd
+import streamlit as st
+
+from models.category import Category
 from models.transaction import Transactions
-from utils.data_io import export_model_csv
-
-
+from utils import config
 from utils.auth import require_login
+from utils.data_io import export_model_csv
 
 require_login()
 
@@ -22,9 +22,12 @@ st.divider()
 # Add transaction form
 with st.form("add_transaction", clear_on_submit=True):
     trans_date = st.date_input("Date", value=date.today())
+    categories = [c.name for c in Category.objects().all(order_by="name")]
+    if not categories:
+        categories = ["Other"]
     category = st.selectbox(
         "Category",
-        ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Other"],
+        categories,
     )
     amount = st.number_input(f"Amount ({config.CURRENCY})", min_value=0.0, step=0.10)
     description = st.text_area("Description")

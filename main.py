@@ -6,11 +6,12 @@ import pathlib
 
 import streamlit as st
 from argon2 import PasswordHasher
+
+from admin import api
+from models.user import User
 from utils import config
 from utils.auth import is_admin
 from utils.db import init_db
-from admin import api
-from models.user import User
 
 # Bootstrap: ensure DB directory exists and tables are created on every startup
 try:
@@ -39,6 +40,9 @@ target_page = st.Page("./pages/p_target.py", title="Target", icon=":material/tar
 
 admin_page = st.Page("./admin/pages/p_home.py", title="Admin")
 admin_data_page = st.Page("./admin/pages/p_data.py", title="Data Management")
+admin_categories_page = st.Page(
+    "./admin/pages/p_categories.py", title="Categories"
+)
 
 
 def first_run_setup():
@@ -146,7 +150,7 @@ admin_setup()
 
 try:
     if st.session_state.logged_in and is_admin():
-        pg_dict["Admin"] = [admin_page, admin_data_page]
+        pg_dict["Admin"] = [admin_page, admin_data_page, admin_categories_page]
 except AttributeError:
     pass
 finally:
