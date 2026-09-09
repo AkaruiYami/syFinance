@@ -6,6 +6,7 @@ from models.user import User
 class Transactions(BaseModel):
     date = DateField(null=False)
     category = TextField(null=False)
+    subcategory = TextField(null=True)
     amount = FloatField(null=False)
     description = TextField()
     user = ForeignKey(User, null=True)

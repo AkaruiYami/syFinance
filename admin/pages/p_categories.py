@@ -4,8 +4,11 @@ import streamlit as st
 from admin import api
 from admin.components import (
     create_category_dialog,
+    create_subcategory_dialog,
     delete_category_dialog,
+    delete_subcategory_dialog,
     edit_category_dialog,
+    edit_subcategory_dialog,
 )
 from utils import config
 from utils.auth import require_admin, require_login
@@ -16,7 +19,7 @@ require_admin()
 st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Category Management")
-st.markdown("Add, edit, or remove expense categories.")
+st.markdown("Add, edit, or remove expense categories and subcategories.")
 st.divider()
 
 categories = api.get_categories()
@@ -31,47 +34,69 @@ if add_button:
 if not categories:
     st.info("No categories defined yet. Add one to get started.")
 else:
-    data = []
     for cat in categories:
         usage = api.get_category_usage_count(cat.name)
-        data.append({"ID": cat.id, "Category": cat.name, "Transactions": usage})
+        subcats = api.get_subcategories(cat.id)
 
-    df = pd.DataFrame(data)
-    df_editor = df.copy()
-    df_editor.insert(0, "Select", False)
+        with st.expander(f"**{cat.name}** — {len(subcats)} subcategories, {usage} transactions"):
+            cat_col1, cat_col2 = st.columns([0.85, 0.15])
+            with cat_col2:
+                if st.button("Edit", key=f"edit_cat_{cat.id}"):
+                    edit_category_dialog(cat.id, cat.name)
+                if st.button("Delete", key=f"del_cat_{cat.id}", type="secondary"):
+                    delete_category_dialog(cat.id, cat.name)
 
-    edited = st.data_editor(
-        df_editor,
-        disabled=["ID", "Category", "Transactions"],
-        hide_index=True,
-    )
+            if subcats:
+                sub_data = []
+                for sub in subcats:
+                    sub_usage = api.get_subcategory_usage_count(sub.name)
+                    sub_data.append({
+                        "ID": sub.id,
+                        "Subcategory": sub.name,
+                        "Transactions": sub_usage,
+                    })
+                sub_df = pd.DataFrame(sub_data)
+                sub_editor = sub_df.copy()
+                sub_editor.insert(0, "Select", False)
 
-    selected_ids = edited.loc[edited["Select"], "ID"].tolist()
-    selected_names = edited.loc[edited["Select"], "Category"].tolist()
+                edited_subs = st.data_editor(
+                    sub_editor,
+                    disabled=["ID", "Subcategory", "Transactions"],
+                    hide_index=True,
+                    key=f"sub_editor_{cat.id}",
+                )
 
-    if selected_ids:
-        st.dataframe(
-            df[df["ID"].isin(selected_ids)], hide_index=True
-        )
+                selected_sub_ids = edited_subs.loc[edited_subs["Select"], "ID"].tolist()
+                selected_sub_names = edited_subs.loc[
+                    edited_subs["Select"], "Subcategory"
+                ].tolist()
 
-    edit_button = st.button("Edit")
-    delete_button = st.button("Delete")
+                sub_btn1, sub_btn2 = st.columns(2)
+                with sub_btn1:
+                    if st.button("Edit Subcategory", key=f"edit_sub_btn_{cat.id}"):
+                        if len(selected_sub_ids) != 1:
+                            st.warning("Select exactly one subcategory to edit.")
+                        else:
+                            edit_subcategory_dialog(
+                                selected_sub_ids[0], selected_sub_names[0]
+                            )
+                with sub_btn2:
+                    if st.button("Delete Subcategory", key=f"del_sub_btn_{cat.id}"):
+                        if not selected_sub_ids:
+                            st.info("Select at least one subcategory to delete.")
+                        elif len(selected_sub_ids) == 1:
+                            delete_subcategory_dialog(
+                                selected_sub_ids[0], selected_sub_names[0]
+                            )
+                        else:
+                            for sid, sname in zip(selected_sub_ids, selected_sub_names):
+                                try:
+                                    api.delete_subcategory(sid)
+                                except ValueError as e:
+                                    st.error(f"Cannot delete '{sname}': {e}")
+                            st.rerun()
+            else:
+                st.info("No subcategories yet.")
 
-    if edit_button:
-        if len(selected_ids) != 1:
-            st.warning("Select exactly one category to edit.")
-        else:
-            edit_category_dialog(selected_ids[0], selected_names[0])
-
-    if delete_button:
-        if not selected_ids:
-            st.info("Select at least one category to delete.")
-        elif len(selected_ids) == 1:
-            delete_category_dialog(selected_ids[0], selected_names[0])
-        else:
-            for cid, cname in zip(selected_ids, selected_names):
-                try:
-                    api.delete_category(cid)
-                except ValueError as e:
-                    st.error(f"Cannot delete '{cname}': {e}")
-            st.rerun()
+            if st.button("Add Subcategory", key=f"add_sub_btn_{cat.id}"):
+                create_subcategory_dialog(cat.id, cat.name)

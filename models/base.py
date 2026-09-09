@@ -199,6 +199,8 @@ class BaseModel(ABC):
 
     @classmethod
     def migrate_table(cls, interactive: bool = False):
+        from models.field import ForeignKey
+
         conn = cls.get_connection()
         cursor = conn.cursor()
 
@@ -206,7 +208,18 @@ class BaseModel(ABC):
         existing_cols = {row[1]: row for row in cursor.fetchall()}  # name -> row
 
         for name, field in cls._fields.items():
-            if name not in existing_cols:
+            if isinstance(field, ForeignKey):
+                col_name = f"{name}_id"
+            else:
+                col_name = name
+
+            if col_name in existing_cols:
+                continue
+
+            if isinstance(field, ForeignKey):
+                col_defs = field.get_column_definitions()
+                col_def = ", ".join(col_defs)
+            else:
                 col_def = f"{name} {field.sql_type}"
 
                 # Handle NOT NULL constraint
@@ -244,7 +257,7 @@ class BaseModel(ABC):
                         if default_val is not None:
                             col_def += f" DEFAULT '{default_val}'"
 
-                cursor.execute(f"ALTER TABLE {cls.table_name} ADD COLUMN {col_def}")
-                print(f"Added column '{name}' to {cls.table_name}")
+            cursor.execute(f"ALTER TABLE {cls.table_name} ADD COLUMN {col_def}")
+            print(f"Added column '{col_name}' to {cls.table_name}")
 
         conn.commit()

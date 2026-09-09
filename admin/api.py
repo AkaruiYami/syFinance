@@ -120,6 +120,7 @@ def update_user_role(user_id: int, new_role: str):
 # ---------------------------------------------------------------------------
 
 from models.category import Category
+from models.subcategory import Subcategory
 
 
 def get_categories():
@@ -163,6 +164,7 @@ def delete_category(category_id: int):
         raise ValueError(
             f"Cannot delete '{cat.name}': {count} transaction(s) still use this category."
         )
+    Subcategory.objects().filter(category_id=category_id).delete()
     cat.delete()
     cat.save()
 
@@ -170,5 +172,65 @@ def delete_category(category_id: int):
 def get_category_usage_count(category_name: str) -> int:
     rows = (
         Transactions.objects().filter(category=category_name).all()
+    )
+    return len(rows)
+
+
+# ---------------------------------------------------------------------------
+# Subcategory CRUD
+# ---------------------------------------------------------------------------
+
+
+def get_subcategories(category_id: int):
+    return Subcategory.objects().filter(category_id=category_id).all(order_by="name")
+
+
+def create_subcategory(name: str, category_id: int):
+    name = name.strip()
+    if not name:
+        raise ValueError("Subcategory name cannot be empty.")
+    cat = Category.objects().filter(id=category_id).first()
+    if not cat:
+        raise ValueError("Parent category not found.")
+    existing = Subcategory.objects().filter(name=name, category_id=category_id).first()
+    if existing:
+        raise ValueError(f"Subcategory '{name}' already exists in '{cat.name}'.")
+    sub = Subcategory.new(name=name, category_id=category_id)
+    sub.save()
+    return sub
+
+
+def update_subcategory(sub_id: int, new_name: str):
+    new_name = new_name.strip()
+    if not new_name:
+        raise ValueError("Subcategory name cannot be empty.")
+    sub = Subcategory.objects().filter(id=sub_id).first()
+    if not sub:
+        raise ValueError("Subcategory not found.")
+    duplicate = Subcategory.objects().filter(
+        name=new_name, category_id=sub.category_id
+    ).first()
+    if duplicate and duplicate.id != sub_id:
+        raise ValueError(f"Subcategory '{new_name}' already exists in this category.")
+    sub.name = new_name
+    sub.save()
+
+
+def delete_subcategory(sub_id: int):
+    sub = Subcategory.objects().filter(id=sub_id).first()
+    if not sub:
+        raise ValueError("Subcategory not found.")
+    count = get_subcategory_usage_count(sub.name)
+    if count > 0:
+        raise ValueError(
+            f"Cannot delete '{sub.name}': {count} transaction(s) still use this subcategory."
+        )
+    sub.delete()
+    sub.save()
+
+
+def get_subcategory_usage_count(subcategory_name: str) -> int:
+    rows = (
+        Transactions.objects().filter(subcategory=subcategory_name).all()
     )
     return len(rows)

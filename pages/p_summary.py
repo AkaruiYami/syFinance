@@ -1,13 +1,12 @@
 from datetime import datetime
-import streamlit as st
-import pandas as pd
-import altair as alt
 
-from utils import config
+import altair as alt
+import pandas as pd
+import streamlit as st
+
 from models.income import Income
 from models.transaction import Transactions
-
-
+from utils import config
 from utils.auth import require_login
 
 require_login()
@@ -96,13 +95,29 @@ st.divider()
 st.subheader("Expenses by Category")
 
 if not df_expenses.empty:
-    # Group by category
-    category_summary = (
-        df_expenses.groupby("category")["amount"]
-        .sum()
-        .reset_index()
-        .sort_values("amount", ascending=False)
-    )
+    show_subcats = st.checkbox("Show subcategory breakdown", key="summary_subcat_toggle")
+
+    if show_subcats:
+        df_plot = df_expenses.copy()
+        df_plot["subcategory"] = df_plot["subcategory"].fillna("(Uncategorized)")
+        df_plot["label"] = df_plot["category"] + " > " + df_plot["subcategory"]
+        category_summary = (
+            df_plot.groupby("label")["amount"]
+            .sum()
+            .reset_index()
+            .sort_values("amount", ascending=False)
+        )
+        color_field = "label"
+        tooltip_fields = ["label", "amount"]
+    else:
+        category_summary = (
+            df_expenses.groupby("category")["amount"]
+            .sum()
+            .reset_index()
+            .sort_values("amount", ascending=False)
+        )
+        color_field = "category"
+        tooltip_fields = ["category", "amount"]
 
     # Pie chart for expenses
     pie_chart = (
@@ -110,8 +125,8 @@ if not df_expenses.empty:
         .mark_arc(innerRadius=50)
         .encode(
             theta=alt.Theta(field="amount", type="quantitative"),
-            color=alt.Color(field="category", type="nominal"),
-            tooltip=["category", "amount"],
+            color=alt.Color(field=color_field, type="nominal"),
+            tooltip=tooltip_fields,
         )
     )
     st.altair_chart(pie_chart, width="stretch")

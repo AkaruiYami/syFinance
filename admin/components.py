@@ -210,3 +210,72 @@ def delete_category_dialog(category_id: int, category_name: str):
                 st.rerun()
             except ValueError as e:
                 st.error(str(e))
+
+
+# ---------------------------------------------------------------------------
+# Subcategory dialogs
+# ---------------------------------------------------------------------------
+
+
+@st.dialog("Add Subcategory")
+def create_subcategory_dialog(category_id: int, category_name: str):
+    st.caption(f"Parent: **{category_name}**")
+    with st.form("create_subcategory_form", clear_on_submit=True):
+        name = st.text_input("Subcategory Name", placeholder="e.g. Groceries")
+        submitted = st.form_submit_button("Add")
+        if submitted:
+            name = name.strip()
+            if not name:
+                st.error("Subcategory name is required.")
+                st.stop()
+            try:
+                api.create_subcategory(name, category_id)
+                st.success(f"Subcategory '{name}' added.")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))
+
+
+@st.dialog("Edit Subcategory")
+def edit_subcategory_dialog(sub_id: int, current_name: str):
+    with st.form("edit_subcategory_form"):
+        name = st.text_input("Subcategory Name", value=current_name)
+        submitted = st.form_submit_button("Save")
+        if submitted:
+            name = name.strip()
+            if not name:
+                st.error("Subcategory name is required.")
+                st.stop()
+            try:
+                api.update_subcategory(sub_id, name)
+                st.success(f"Subcategory renamed to '{name}'.")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))
+
+
+@st.dialog("Confirm Delete Subcategory")
+def delete_subcategory_dialog(sub_id: int, sub_name: str):
+    usage = api.get_subcategory_usage_count(sub_name)
+    if usage > 0:
+        st.warning(
+            f"Cannot delete **{sub_name}** — {usage} transaction(s) still use this subcategory. "
+            "Reassign or remove those transactions first."
+        )
+        if st.button("Close"):
+            st.rerun()
+        return
+
+    st.warning(f"Are you sure you want to delete **{sub_name}**?")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Cancel"):
+            st.rerun()
+    with col2:
+        if st.button("Delete", type="primary"):
+            try:
+                api.delete_subcategory(sub_id)
+                st.success(f"Subcategory '{sub_name}' deleted.")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))

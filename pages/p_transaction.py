@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from models.category import Category
+from models.subcategory import Subcategory
 from models.transaction import Transactions
 from utils import config
 from utils.auth import require_login
@@ -22,13 +23,24 @@ st.divider()
 # Add transaction form
 with st.form("add_transaction", clear_on_submit=True):
     trans_date = st.date_input("Date", value=date.today())
-    categories = [c.name for c in Category.objects().all(order_by="name")]
-    if not categories:
-        categories = ["Other"]
-    category = st.selectbox(
-        "Category",
-        categories,
+    categories = Category.objects().all(order_by="name")
+    cat_names = [c.name for c in categories] if categories else ["Other"]
+    category = st.selectbox("Category", cat_names)
+    # Subcategory: show options for selected category
+    selected_cat = next(
+        (c for c in categories if c.name == category), None
     )
+    subcats = (
+        Subcategory.objects().filter(category_id=selected_cat.id).all(order_by="name")
+        if selected_cat
+        else []
+    )
+    subcat_names = [s.name for s in subcats]
+    subcategory = None
+    if subcat_names:
+        subcategory = st.selectbox("Subcategory (optional)", ["—"] + subcat_names)
+        if subcategory == "—":
+            subcategory = None
     amount = st.number_input(f"Amount ({config.CURRENCY})", min_value=0.0, step=0.10)
     description = st.text_area("Description")
     submitted = st.form_submit_button("Add Transaction")
@@ -42,6 +54,7 @@ if submitted:
         new_transaction = Transactions.new(
             date=trans_date,
             category=str(category),
+            subcategory=subcategory,
             amount=float(amount),
             description=str(description),
             user=int(st.session_state.user_id),
@@ -127,17 +140,36 @@ def summary_section():
         if not selected_categories:
             selected_categories = all_categories
 
-        df_filtered = df[df["category"].isin(selected_categories)]
-        summary = (
-            df_filtered.groupby(["period", "category"])["amount"]
-            .sum()
-            .reset_index()
-            .sort_values(["period", "category"])
-        )
+        show_subcats = st.checkbox("Show subcategory breakdown", key="txn_subcat_toggle")
 
-        pivot = summary.pivot(
-            index="period", columns="category", values="amount"
-        ).fillna(0)
+        df_filtered = df[df["category"].isin(selected_categories)]
+
+        if show_subcats:
+            df_filtered = df_filtered.copy()
+            df_filtered["subcategory"] = df_filtered["subcategory"].fillna("(Uncategorized)")
+            label_col = "cat_sub_label"
+            df_filtered[label_col] = (
+                df_filtered["category"] + " > " + df_filtered["subcategory"]
+            )
+            summary = (
+                df_filtered.groupby(["period", label_col])["amount"]
+                .sum()
+                .reset_index()
+                .sort_values(["period", label_col])
+            )
+            pivot = summary.pivot(
+                index="period", columns=label_col, values="amount"
+            ).fillna(0)
+        else:
+            summary = (
+                df_filtered.groupby(["period", "category"])["amount"]
+                .sum()
+                .reset_index()
+                .sort_values(["period", "category"])
+            )
+            pivot = summary.pivot(
+                index="period", columns="category", values="amount"
+            ).fillna(0)
 
         # build full period range
         start = df["date"].min()

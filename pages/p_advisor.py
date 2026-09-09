@@ -1,19 +1,18 @@
 # advisor.py
 import calendar
+from datetime import datetime
 from decimal import Decimal
 from math import ceil, trunc
-import streamlit as st
-import pandas as pd
-from datetime import datetime
+
 import altair as alt
 import numpy as np
+import pandas as pd
+import streamlit as st
 
-from utils import config
 from models.income import Income
 from models.transaction import Transactions
 from models.wishlist import Wishlist
-
-
+from utils import config
 from utils.auth import require_login
 
 require_login()
@@ -231,7 +230,7 @@ else:
             )
 
     # Insight 3: Burn rate / savings runway
-    if total_expenses > monthly_income and monthly_income > 0:
+    if total_expenses > monthly_income > 0:
         excess = total_expenses - monthly_income
         # Compute cumulative savings from complete months
         if not monthly_summary.empty:
@@ -277,7 +276,7 @@ else:
         )
 
     # Income vs expenses
-    if total_expenses > monthly_income and monthly_income > 0:
+    if total_expenses > monthly_income > 0:
         excess_pct = ((total_expenses - monthly_income) / monthly_income) * 100
         recs.append(
             f"⚠️ Your expenses exceed your income by {excess_pct:.0f}% — "
@@ -341,8 +340,21 @@ st.divider()
 st.subheader("📊 Category Trends")
 
 if not df_expenses.empty and "month" in df_expenses.columns:
+    show_subcats_trends = st.checkbox(
+        "Show subcategory breakdown", key="advisor_trends_subcat"
+    )
+
+    if show_subcats_trends:
+        df_t = df_expenses.copy()
+        df_t["subcategory"] = df_t["subcategory"].fillna("(Uncategorized)")
+        df_t["cat_label"] = df_t["category"] + " > " + df_t["subcategory"]
+        group_col = "cat_label"
+    else:
+        df_t = df_expenses
+        group_col = "category"
+
     cat_monthly = (
-        df_expenses.groupby(["month", "category"])["amount"]
+        df_t.groupby(["month", group_col])["amount"]
         .sum()
         .reset_index()
         .sort_values("month")
@@ -352,7 +364,7 @@ if not df_expenses.empty and "month" in df_expenses.columns:
     available_months = sorted(cat_monthly["month"].unique())
     latest_month = max(available_months)
 
-    current_cat = cat_monthly[cat_monthly["month"] == latest_month].set_index("category")["amount"]
+    current_cat = cat_monthly[cat_monthly["month"] == latest_month].set_index(group_col)["amount"]
     prev_month = available_months[-2] if len(available_months) >= 2 else None
     prev_cat = (
         cat_monthly[cat_monthly["month"] == prev_month]["amount"].values[0]
@@ -362,14 +374,14 @@ if not df_expenses.empty and "month" in df_expenses.columns:
 
     # Trailing 3-month average per category (excluding latest month)
     trailing_3m = cat_monthly[cat_monthly["month"].isin(available_months[-4:-1])]
-    avg_3m = trailing_3m.groupby("category")["amount"].mean() if not trailing_3m.empty else pd.Series(dtype=float)
+    avg_3m = trailing_3m.groupby(group_col)["amount"].mean() if not trailing_3m.empty else pd.Series(dtype=float)
 
     trend_rows = []
     for cat, amount in current_cat.items():
         # vs previous month
         if prev_cat is not None and prev_month is not None:
             prev_val = cat_monthly[
-                (cat_monthly["month"] == prev_month) & (cat_monthly["category"] == cat)
+                (cat_monthly["month"] == prev_month) & (cat_monthly[group_col] == cat)
             ]["amount"]
             prev_amount = prev_val.values[0] if not prev_val.empty else 0
             pct_prev = ((amount - prev_amount) / prev_amount * 100) if prev_amount > 0 else None
@@ -380,8 +392,9 @@ if not df_expenses.empty and "month" in df_expenses.columns:
         avg_3m_val = avg_3m.get(cat, 0)
         pct_3m = ((amount - avg_3m_val) / avg_3m_val * 100) if avg_3m_val > 0 else None
 
+        label = "Category" if not show_subcats_trends else "Category > Subcategory"
         trend_rows.append({
-            "Category": cat,
+            label: cat,
             "Latest": amount,
             "Prev Month": prev_amount if prev_cat is not None else None,
             "Δ% (MoM)": pct_prev,
@@ -413,11 +426,12 @@ if not df_expenses.empty and "month" in df_expenses.columns:
 
         # Flag large spikes
         spikes = df_trends[
-            ((df_trends["Δ% (MoM)"].fillna(0).abs() > config.CATEGORY_SPIKE_THRESHOLD))
-            | ((df_trends["Δ% (3M)"].fillna(0).abs() > config.CATEGORY_SPIKE_THRESHOLD))
+            (df_trends["Δ% (MoM)"].fillna(0).abs() > config.CATEGORY_SPIKE_THRESHOLD)
+            | (df_trends["Δ% (3M)"].fillna(0).abs() > config.CATEGORY_SPIKE_THRESHOLD)
         ]
+        cat_col = "Category" if not show_subcats_trends else "Category > Subcategory"
         for _, row in spikes.iterrows():
-            cat_name = row["Category"]
+            cat_name = row[cat_col]
             latest = row["Latest"]
             if pd.notna(row["Δ% (MoM)"]) and abs(row["Δ% (MoM)"]) > config.CATEGORY_SPIKE_THRESHOLD:
                 direction = "increased" if row["Δ% (MoM)"] > 0 else "decreased"
