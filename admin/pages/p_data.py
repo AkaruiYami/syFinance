@@ -15,6 +15,7 @@ from utils.data_io import (
     export_all_users_data_zip,
     import_csv,
     reset_user_data,
+    restore_budget_policies,
 )
 
 require_login()
@@ -74,6 +75,20 @@ if uploaded_zip and st.button("Restore"):
                         for err in result["errors"]:
                             st.text(err)
 
+            if "budget_policies.csv" in available:
+                with zf.open("budget_policies.csv") as f:
+                    result = restore_budget_policies(f)
+                st.info(
+                    f"Budget policies: {result['imported']} created, "
+                    f"{result['updated']} updated, {result['skipped']} skipped."
+                )
+                for error in result["errors"]:
+                    st.error(error)
+            else:
+                st.info(
+                    "This backup has no budget policies. Current settings were kept."
+                )
+
     except Exception as e:
         st.error(f"Failed to restore: {e}")
 
@@ -129,7 +144,8 @@ st.divider()
 st.subheader("Reset Data")
 st.markdown(
     "Permanently delete financial records for a selected user. "
-    "User accounts and categories are kept. Download a backup first if needed."
+    "User accounts, categories, and budget settings are kept. "
+    "Download a backup first if needed."
 )
 if all_users:
     with st.form("reset_data"):

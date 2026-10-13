@@ -1,8 +1,10 @@
 import csv
 import io
+import sqlite3
 import zipfile
 from datetime import datetime
 
+from models.budget_policy import BudgetPolicy
 from models.field import DateField, FloatField
 from models.income import Income
 from models.transaction import Transactions
@@ -30,7 +32,9 @@ def _parse_date(value):
             return datetime.strptime(value.strip(), fmt).strftime("%Y-%m-%d")
         except (ValueError, AttributeError):
             continue
-    raise ValueError(f"Invalid date: '{value}'. Expected one of: {', '.join(DATE_FORMATS)}")
+    raise ValueError(
+        f"Invalid date: '{value}'. Expected one of: {', '.join(DATE_FORMATS)}"
+    )
 
 
 def _get_csv_columns(model_cls):
@@ -71,6 +75,7 @@ def export_all_user_data_zip(user_id):
         for name, model_cls in MODEL_MAP.items():
             csv_bytes = export_model_csv(model_cls, user_id)
             zf.writestr(f"{name}.csv", csv_bytes)
+        zf.writestr("budget_policies.csv", export_model_csv(BudgetPolicy, user_id))
     return buf.getvalue()
 
 
@@ -85,16 +90,19 @@ def export_all_users_data_zip():
         writer = csv.DictWriter(output, fieldnames=["id", "name", "email", "role"])
         writer.writeheader()
         for user in users:
-            writer.writerow({
-                "id": user.id,
-                "name": user.name,
-                "email": user.email or "",
-                "role": user.role or "user",
-            })
+            writer.writerow(
+                {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email or "",
+                    "role": user.role or "user",
+                }
+            )
         zf.writestr("users.csv", output.getvalue().encode("utf-8"))
 
         # Per-model exports with user_id and user_name tags
-        for name, model_cls in MODEL_MAP.items():
+        backup_models = {**MODEL_MAP, "budget_policies": BudgetPolicy}
+        for name, model_cls in backup_models.items():
             records = model_cls.objects().all()
             columns = ["user_id", "user_name", "id"] + _get_csv_columns(model_cls)
 
@@ -173,6 +181,9 @@ def reset_user_data(user_id, model_cls=None):
 
 def import_csv(model_cls, file, user_id=None):
     result = {"imported": 0, "updated": 0, "skipped": 0, "errors": []}
+    if model_cls not in MODEL_MAP.values():
+        result["errors"].append("Use backup restore to import budget policies.")
+        return result
 
     try:
         content = file.read()
@@ -244,4 +255,80 @@ def import_csv(model_cls, file, user_id=None):
             result["skipped"] += 1
             result["errors"].append(f"Row {i}: {e}")
 
+    return result
+
+
+def restore_budget_policies(file):
+    """Merge policy backups atomically per user, validating the whole timeline."""
+    from collections import defaultdict
+
+    from utils.budget import Policy, as_date, load_policies, validate_policies
+
+    result = {"imported": 0, "updated": 0, "skipped": 0, "errors": []}
+    content = file.read()
+    if isinstance(content, bytes):
+        content = content.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(content))
+    groups = defaultdict(list)
+    for index, raw_row in enumerate(reader, 1):
+        row = {(key or "").strip().lower(): value for key, value in raw_row.items()}
+        try:
+            uid = int(row.get("user_id") or row.get("user") or "")
+            groups[uid].append(row)
+        except (ValueError, TypeError):
+            result["skipped"] += 1
+            result["errors"].append(f"Policy row {index}: invalid user ID")
+
+    conn = BudgetPolicy.get_connection()
+    for uid, rows in groups.items():
+        try:
+            created = updated = 0
+            with conn:
+                if User.objects().filter(id=uid).first() is None:
+                    raise ValueError("User does not exist")
+                incoming = []
+                for row in rows:
+                    record_id = int(row["id"])
+                    if record_id <= 0:
+                        raise ValueError("Policy ID must be positive")
+                    existing = BudgetPolicy.objects().filter(id=record_id).first()
+                    if existing and existing.to_dict()["user_id"] != uid:
+                        raise ValueError(
+                            f"Policy ID {record_id} belongs to another user"
+                        )
+                    incoming.append(
+                        Policy(
+                            as_date(row["effective_date"]),
+                            int(row["start_day"]),
+                            float(row["savings_percent"]),
+                            record_id,
+                        )
+                    )
+                    updated += existing is not None
+                    created += existing is None
+                ids = [p.id for p in incoming]
+                if len(ids) != len(set(ids)):
+                    raise ValueError("Duplicate policy IDs in backup")
+                merged = [p for p in load_policies(uid) if p.id not in ids] + incoming
+                validate_policies(merged)
+                for policy in incoming:
+                    conn.execute(
+                        "INSERT INTO budgetpolicy "
+                        "(id, user_id, effective_date, start_day, savings_percent) "
+                        "VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET "
+                        "effective_date=excluded.effective_date, "
+                        "start_day=excluded.start_day, savings_percent=excluded.savings_percent",
+                        (
+                            policy.id,
+                            uid,
+                            policy.effective_date.isoformat(),
+                            policy.start_day,
+                            policy.savings_percent,
+                        ),
+                    )
+            result["imported"] += created
+            result["updated"] += updated
+        except (ValueError, TypeError, KeyError, OverflowError, sqlite3.Error) as exc:
+            result["skipped"] += len(rows)
+            result["errors"].append(f"User {uid} policies: {exc}")
     return result

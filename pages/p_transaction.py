@@ -3,11 +3,13 @@ from datetime import date, datetime
 import pandas as pd
 import streamlit as st
 
+from components.budget_view import history_filter
 from models.category import Category
 from models.subcategory import Subcategory
 from models.transaction import Transactions
 from utils import config
 from utils.auth import require_login
+from utils.budget import available_periods, load_policies, period_for
 from utils.data_io import export_model_csv
 
 require_login()
@@ -27,9 +29,7 @@ with st.form("add_transaction", clear_on_submit=True):
     cat_names = [c.name for c in categories] if categories else ["Other"]
     category = st.selectbox("Category", cat_names)
     # Subcategory: show options for selected category
-    selected_cat = next(
-        (c for c in categories if c.name == category), None
-    )
+    selected_cat = next((c for c in categories if c.name == category), None)
     subcats = (
         Subcategory.objects().filter(category_id=selected_cat.id).all(order_by="name")
         if selected_cat
@@ -72,11 +72,16 @@ records = (
 )
 
 if records:
-    df = pd.DataFrame([rec.to_dict() for rec in records])
-    df = df.drop("user_id", axis=1)
-    df["amount"] = (
-        df["amount"].astype(float).map(config.fmt)
+    history_records = history_filter(
+        [rec.to_dict() for rec in records],
+        int(st.session_state.user_id),
+        "transaction_history",
     )
+    df = pd.DataFrame(
+        history_records,
+        columns=["id", "date", "amount", "category", "subcategory", "description"],
+    )
+    df["amount"] = df["amount"].astype(float).map(config.fmt)
     df.set_index("id", inplace=True)
     df = df.sort_values("date", ascending=False)
 
@@ -94,7 +99,7 @@ if records:
     )
 
 else:
-    st.info("Table will display recorded transactions once persistence is added.")
+    st.info("No transactions recorded yet.")
 
 st.divider()
 st.subheader("Summary")
@@ -102,14 +107,16 @@ st.subheader("Summary")
 
 @st.fragment
 def summary_section():
-    if records:
-        df = pd.DataFrame([rec.to_dict() for rec in records])
+    if records and history_records:
+        df = pd.DataFrame(history_records)
         df["amount"] = df["amount"].astype(float)
         df["date"] = pd.to_datetime(df["date"])
 
+        policies = load_policies(int(st.session_state.user_id))
         period = st.selectbox(
             "View spending by:",
-            [
+            (["Payday cycle"] if policies else [])
+            + [
                 "Daily",
                 "Weekly",
                 "Monthly",
@@ -117,7 +124,11 @@ def summary_section():
             ],
         )
 
-        if period == "Daily":
+        if period == "Payday cycle":
+            df["period"] = df["date"].map(
+                lambda value: period_for(value.date(), "Payday cycle", policies).label
+            )
+        elif period == "Daily":
             df["period"] = df["date"].dt.to_period("D").astype(str)
         elif period == "Weekly":
             df["period"] = df["date"].dt.to_period("W").astype(str)
@@ -140,13 +151,17 @@ def summary_section():
         if not selected_categories:
             selected_categories = all_categories
 
-        show_subcats = st.checkbox("Show subcategory breakdown", key="txn_subcat_toggle")
+        show_subcats = st.checkbox(
+            "Show subcategory breakdown", key="txn_subcat_toggle"
+        )
 
         df_filtered = df[df["category"].isin(selected_categories)]
 
         if show_subcats:
             df_filtered = df_filtered.copy()
-            df_filtered["subcategory"] = df_filtered["subcategory"].fillna("(Uncategorized)")
+            df_filtered["subcategory"] = df_filtered["subcategory"].fillna(
+                "(Uncategorized)"
+            )
             label_col = "cat_sub_label"
             df_filtered[label_col] = (
                 df_filtered["category"] + " > " + df_filtered["subcategory"]
@@ -175,7 +190,18 @@ def summary_section():
         start = df["date"].min()
         end = df["date"].max()
 
-        if period == "Daily":
+        if period == "Payday cycle":
+            full_periods = [
+                item.label
+                for item in available_periods(
+                    history_records,
+                    "Payday cycle",
+                    policies,
+                    today=max(date.today(), end.date()),
+                )
+                if item.start <= end.date()
+            ]
+        elif period == "Daily":
             full_periods = pd.period_range(start, end, freq="D").astype(str)
         elif period == "Weekly":
             full_periods = pd.period_range(start, end, freq="W").astype(str)

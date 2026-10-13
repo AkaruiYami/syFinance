@@ -2,9 +2,11 @@ import io
 import sqlite3
 import unittest
 import zipfile
+from datetime import date
 from unittest.mock import patch
 
 from models.base import BaseModel
+from models.budget_policy import BudgetPolicy
 from models.income import Income
 from models.transaction import Transactions
 from models.user import User
@@ -30,7 +32,7 @@ class DataImportTests(unittest.TestCase):
         self.tables_patch = patch.object(BaseModel, "_tables_created", set())
         self.tables_patch.start()
         self.addCleanup(self.tables_patch.stop)
-        for model in (User, Income, Transactions, Wishlist):
+        for model in (User, Income, Transactions, Wishlist, BudgetPolicy):
             model.create_table()
         for name in ("Alice", "Bob"):
             User.new(name=name, password="test").save()
@@ -66,9 +68,11 @@ class DataImportTests(unittest.TestCase):
 
     def test_backup_round_trip_is_repeatable(self):
         self.load("42,2026-01-01,Food,10,Original")
-        with zipfile.ZipFile(io.BytesIO(export_all_users_data_zip())) as backup:
-            with backup.open("transactions.csv") as csv_file:
-                result = import_csv(Transactions, csv_file)
+        with (
+            zipfile.ZipFile(io.BytesIO(export_all_users_data_zip())) as backup,
+            backup.open("transactions.csv") as csv_file,
+        ):
+            result = import_csv(Transactions, csv_file)
         self.assertEqual(result["updated"], 1)
         self.assertEqual(len(Transactions.objects().all()), 1)
 
@@ -76,11 +80,18 @@ class DataImportTests(unittest.TestCase):
         self.load("42,2026-01-01,Food,10,Alice")
         self.load("43,2026-01-01,Food,10,Bob", user_id=2)
         Income.new(date="2026-01-01", amount=100, user=1).save()
+        BudgetPolicy.new(
+            effective_date=date.min,
+            start_day=28,
+            savings_percent=20,
+            user=1,
+        ).save()
         self.assertEqual(reset_user_data(1, Transactions), 1)
         self.assertEqual(len(Income.objects().all()), 1)
         self.assertEqual(reset_user_data(1), 1)
         self.assertEqual(len(Transactions.objects().all()), 1)
         self.assertEqual(len(User.objects().all()), 2)
+        self.assertEqual(len(BudgetPolicy.objects().filter(user_id=1).all()), 1)
 
 
 if __name__ == "__main__":

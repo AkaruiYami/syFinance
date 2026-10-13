@@ -1,13 +1,13 @@
-import streamlit as st
 from datetime import date, datetime
+
 import pandas as pd
+import streamlit as st
 
-from utils import config
+from components.budget_view import history_filter
 from models.income import Income
-from utils.data_io import export_model_csv
-
-
+from utils import config
 from utils.auth import require_login
+from utils.data_io import export_model_csv
 
 require_login()
 
@@ -85,8 +85,17 @@ if incomes:
     st.divider()
     st.subheader("All Income Records")
 
+    filtered_records = history_filter(
+        [inc.to_dict() for inc in incomes],
+        int(st.session_state.user_id),
+        "income_history",
+    )
+    df_display = pd.DataFrame(
+        filtered_records, columns=["id", "date", "amount", "description"]
+    )
+    df_display["date"] = pd.to_datetime(df_display["date"])
+    df_display.set_index("id", inplace=True)
     # Format for display
-    df_display = df.copy()
     df_display["amount"] = df_display["amount"].apply(config.fmt)
     df_display["date"] = df_display["date"].dt.date
     # paginated_table(df_display, to_display=["date", "amount", "description"])
@@ -103,17 +112,9 @@ if incomes:
     )
 
     st.divider()
-    st.subheader("Monthly Summary")
-
-    now = datetime.now()
-    df_current_month = df[
-        (df["date"].dt.year == now.year) & (df["date"].dt.month == now.month)
-    ]
-
-    total_income = df_current_month["amount"].sum()
-    total_income_str = config.fmt(total_income)
-
-    st.metric("Monthly Income", total_income_str)
+    st.subheader("Selected Records Summary")
+    total_income = sum(float(record["amount"]) for record in filtered_records)
+    st.metric("Income in selected records", config.fmt(total_income))
 
 else:
     st.info("No income recorded yet.")
