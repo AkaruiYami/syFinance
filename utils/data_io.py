@@ -114,8 +114,65 @@ def export_all_users_data_zip():
     return buf.getvalue()
 
 
-def import_csv(model_cls, file, user_id):
-    result = {"imported": 0, "skipped": 0, "errors": []}
+def _upsert_record(model_cls, kwargs, raw_id):
+    """Save an imported row, preserving supplied IDs and user ownership."""
+    record_id = None
+    if raw_id:
+        record_id = int(raw_id)
+        if record_id <= 0:
+            raise ValueError("ID must be a positive integer")
+
+    conn = model_cls.get_connection()
+    with conn:
+        existing = (
+            model_cls.objects().filter(id=record_id).first()
+            if record_id is not None
+            else None
+        )
+        if existing is not None:
+            if existing.to_dict()["user_id"] != kwargs["user"]:
+                raise ValueError(f"ID {record_id} belongs to another user")
+            instance = existing
+            for name, value in kwargs.items():
+                setattr(instance, name, value)
+        else:
+            instance = model_cls.new(**kwargs)
+
+        data = instance.to_dict()
+        data.pop("id")
+        if record_id is not None:
+            data["id"] = record_id
+        columns = list(data)
+        placeholders = ", ".join("?" for _ in columns)
+        updates = ", ".join(
+            f"{column} = excluded.{column}" for column in columns if column != "id"
+        )
+        conn.execute(
+            f"INSERT INTO {model_cls.table_name} ({', '.join(columns)}) "
+            f"VALUES ({placeholders}) ON CONFLICT(id) DO UPDATE SET {updates}",
+            list(data.values()),
+        )
+    return "updated" if existing is not None else "imported"
+
+
+def reset_user_data(user_id, model_cls=None):
+    """Delete selected financial records for one user in a single transaction."""
+    models = [model_cls] if model_cls is not None else list(MODEL_MAP.values())
+    if any(model not in MODEL_MAP.values() for model in models):
+        raise ValueError("Unsupported data type")
+    conn = models[0].get_connection()
+    deleted = 0
+    with conn:
+        for model in models:
+            cursor = conn.execute(
+                f"DELETE FROM {model.table_name} WHERE user_id = ?", (user_id,)
+            )
+            deleted += cursor.rowcount
+    return deleted
+
+
+def import_csv(model_cls, file, user_id=None):
+    result = {"imported": 0, "updated": 0, "skipped": 0, "errors": []}
 
     try:
         content = file.read()
@@ -150,9 +207,14 @@ def import_csv(model_cls, file, user_id):
             for field_name in model_cls._fields:
                 if field_name in ("user",):
                     continue
-                csv_col = col_index.get(field_name)
-                if csv_col and row.get(csv_col, "").strip():
-                    value = row[csv_col].strip()
+                csv_col = col_index.get(field_name.lower())
+                if csv_col:
+                    value = (row.get(csv_col) or "").strip()
+                    if not value:
+                        if field_name in required:
+                            raise ValueError(f"Required field '{field_name}' is empty")
+                        kwargs[field_name] = None
+                        continue
                     field = model_cls._fields[field_name]
 
                     if isinstance(field, DateField):
@@ -167,12 +229,16 @@ def import_csv(model_cls, file, user_id):
                 if col not in kwargs or kwargs[col] is None:
                     raise ValueError(f"Required field '{col}' is missing or empty")
 
-            # Set the user FK
-            kwargs["user"] = user_id
-
-            instance = model_cls.new(**kwargs)
-            instance.save()
-            result["imported"] += 1
+            # Backup rows carry their owner; ordinary CSV imports use the target user.
+            uid = user_id
+            if uid is None:
+                uid = int((row.get(col_index.get("user_id")) or "").strip())
+                if User.objects().filter(id=uid).first() is None:
+                    raise ValueError(f"user_id {uid} does not exist")
+            kwargs["user"] = uid
+            raw_id = (row.get(col_index.get("id")) or "").strip()
+            outcome = _upsert_record(model_cls, kwargs, raw_id)
+            result[outcome] += 1
 
         except Exception as e:
             result["skipped"] += 1
