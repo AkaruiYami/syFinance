@@ -20,13 +20,12 @@ st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
 st.title("Category Management")
 st.markdown("Add, edit, or remove expense categories and subcategories.")
-st.divider()
 
 categories = api.get_categories()
 
-col1, col2 = st.columns([0.15, 0.85])
-with col1:
-    add_button = st.button("Add Category")
+_, action_col = st.columns([0.8, 0.2])
+with action_col:
+    add_button = st.button("Add Category", type="primary", use_container_width=True)
 
 if add_button:
     create_category_dialog()
@@ -38,23 +37,36 @@ else:
         usage = api.get_category_usage_count(cat.name)
         subcats = api.get_subcategories(cat.id)
 
-        with st.expander(f"**{cat.name}** — {len(subcats)} subcategories, {usage} transactions"):
-            cat_col1, cat_col2 = st.columns([0.85, 0.15])
-            with cat_col2:
-                if st.button("Edit", key=f"edit_cat_{cat.id}"):
+        with st.expander(
+            f"**{cat.name}** · {len(subcats)} subcategories · {usage} transactions"
+        ):
+            action_add, action_edit, action_delete = st.columns([0.5, 0.25, 0.25])
+            with action_add:
+                if st.button(
+                    "Add Subcategory",
+                    key=f"add_sub_btn_{cat.id}",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    create_subcategory_dialog(cat.id, cat.name)
+            with action_edit:
+                if st.button("Edit Category", key=f"edit_cat_{cat.id}"):
                     edit_category_dialog(cat.id, cat.name)
-                if st.button("Delete", key=f"del_cat_{cat.id}", type="secondary"):
+            with action_delete:
+                if st.button("Delete Category", key=f"del_cat_{cat.id}"):
                     delete_category_dialog(cat.id, cat.name)
 
             if subcats:
                 sub_data = []
                 for sub in subcats:
                     sub_usage = api.get_subcategory_usage_count(sub.name)
-                    sub_data.append({
-                        "ID": sub.id,
-                        "Subcategory": sub.name,
-                        "Transactions": sub_usage,
-                    })
+                    sub_data.append(
+                        {
+                            "ID": sub.id,
+                            "Subcategory": sub.name,
+                            "Transactions": sub_usage,
+                        }
+                    )
                 sub_df = pd.DataFrame(sub_data)
                 sub_editor = sub_df.copy()
                 sub_editor.insert(0, "Select", False)
@@ -71,17 +83,25 @@ else:
                     edited_subs["Select"], "Subcategory"
                 ].tolist()
 
-                sub_btn1, sub_btn2 = st.columns(2)
-                with sub_btn1:
-                    if st.button("Edit Subcategory", key=f"edit_sub_btn_{cat.id}"):
+                edit_col, delete_col, _ = st.columns([0.25, 0.25, 0.5])
+                with edit_col:
+                    if st.button(
+                        "Edit Selected",
+                        key=f"edit_sub_btn_{cat.id}",
+                        use_container_width=True,
+                    ):
                         if len(selected_sub_ids) != 1:
                             st.warning("Select exactly one subcategory to edit.")
                         else:
                             edit_subcategory_dialog(
                                 selected_sub_ids[0], selected_sub_names[0]
                             )
-                with sub_btn2:
-                    if st.button("Delete Subcategory", key=f"del_sub_btn_{cat.id}"):
+                with delete_col:
+                    if st.button(
+                        "Delete Selected",
+                        key=f"del_sub_btn_{cat.id}",
+                        use_container_width=True,
+                    ):
                         if not selected_sub_ids:
                             st.info("Select at least one subcategory to delete.")
                         elif len(selected_sub_ids) == 1:
@@ -97,6 +117,3 @@ else:
                             st.rerun()
             else:
                 st.info("No subcategories yet.")
-
-            if st.button("Add Subcategory", key=f"add_sub_btn_{cat.id}"):
-                create_subcategory_dialog(cat.id, cat.name)

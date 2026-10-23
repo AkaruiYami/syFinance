@@ -39,13 +39,9 @@ target_page = st.Page("./pages/p_target.py", title="Target", icon=":material/tar
 budget_settings_page = st.Page(
     "./pages/p_budget_settings.py", title="Budget Settings", icon=":material/settings:"
 )
-# loan_page = st.Pretricted=Noneage("./pages/p_loan.py", title="Loan", icon=":material/credit_score:")
-
 admin_page = st.Page("./admin/pages/p_home.py", title="Admin")
 admin_data_page = st.Page("./admin/pages/p_data.py", title="Data Management")
-admin_categories_page = st.Page(
-    "./admin/pages/p_categories.py", title="Categories"
-)
+admin_categories_page = st.Page("./admin/pages/p_categories.py", title="Categories")
 
 
 def first_run_setup():

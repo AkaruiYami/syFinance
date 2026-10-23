@@ -195,7 +195,7 @@ def create_subcategory(name: str, category_id: int):
     existing = Subcategory.objects().filter(name=name, category_id=category_id).first()
     if existing:
         raise ValueError(f"Subcategory '{name}' already exists in '{cat.name}'.")
-    sub = Subcategory.new(name=name, category_id=category_id)
+    sub = Subcategory.new(name=name, category=category_id)
     sub.save()
     return sub
 
