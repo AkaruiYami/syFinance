@@ -22,28 +22,36 @@ st.title("Transactions")
 st.markdown("View, add, and manage your financial transactions here.")
 st.divider()
 
-# Add transaction form
-with st.form("add_transaction", clear_on_submit=True):
-    trans_date = st.date_input("Date", value=date.today())
-    categories = Category.objects().all(order_by="name")
-    cat_names = [c.name for c in categories] if categories else ["Other"]
-    category = st.selectbox("Category", cat_names)
-    # Subcategory: show options for selected category
-    selected_cat = next((c for c in categories if c.name == category), None)
-    subcats = (
-        Subcategory.objects().filter(category_id=selected_cat.id).all(order_by="name")
-        if selected_cat
-        else []
+# Category changes must rerun the page to refresh the available subcategories.
+entry_key = f"transaction_entry_{st.session_state.get('transaction_entry_number', 0)}"
+trans_date = st.date_input("Date", value=date.today(), key=f"{entry_key}_date")
+categories = Category.objects().all(order_by="name")
+cat_names = [c.name for c in categories] if categories else ["Other"]
+category = st.selectbox("Category", cat_names, key=f"{entry_key}_category")
+selected_cat = next((c for c in categories if c.name == category), None)
+subcats = (
+    Subcategory.objects().filter(category_id=selected_cat.id).all(order_by="name")
+    if selected_cat
+    else []
+)
+subcat_names = [s.name for s in subcats]
+subcategory = None
+if subcat_names:
+    subcategory = st.selectbox(
+        "Subcategory (optional)",
+        ["—"] + subcat_names,
+        key=f"{entry_key}_subcategory_{category}",
     )
-    subcat_names = [s.name for s in subcats]
-    subcategory = None
-    if subcat_names:
-        subcategory = st.selectbox("Subcategory (optional)", ["—"] + subcat_names)
-        if subcategory == "—":
-            subcategory = None
-    amount = st.number_input(f"Amount ({config.CURRENCY})", min_value=0.0, step=0.10)
-    description = st.text_area("Description")
-    submitted = st.form_submit_button("Add Transaction")
+    if subcategory == "—":
+        subcategory = None
+amount = st.number_input(
+    f"Amount ({config.CURRENCY})",
+    min_value=0.0,
+    step=0.10,
+    key=f"{entry_key}_amount",
+)
+description = st.text_area("Description", key=f"{entry_key}_description")
+submitted = st.button("Add Transaction")
 
 if submitted:
     if amount <= 0:
@@ -60,7 +68,11 @@ if submitted:
             user=int(st.session_state.user_id),
         )
         new_transaction.save()
-        st.success("Transaction added!")
+        st.session_state.transaction_entry_number = (
+            st.session_state.get("transaction_entry_number", 0) + 1
+        )
+        st.toast("Transaction added!")
+        st.rerun()
 
 st.divider()
 st.subheader("Transaction History")

@@ -31,6 +31,18 @@ mode, period, policies, _ = select_period(
     int(st.session_state.user_id), transactions + incomes, "dashboard"
 )
 values = show_metrics(incomes, transactions, period)
+today = date.today()
+total_income = sum(
+    float(record["amount"])
+    for record in incomes
+    if date.fromisoformat(str(record["date"])[:10]) <= today
+)
+total_spending = sum(
+    float(record["amount"])
+    for record in transactions
+    if date.fromisoformat(str(record["date"])[:10]) <= today
+)
+st.metric("Total savings (all time)", config.fmt(total_income - total_spending))
 previous = comparison_period(period, mode, policies)
 previous_values = summarize(incomes, transactions, previous)
 st.caption(
