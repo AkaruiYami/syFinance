@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -17,6 +18,10 @@ class BaseField:
 
 class DateField(BaseField):
     sql_type = "DATE"
+
+
+class IntegerField(BaseField):
+    sql_type = "INTEGER"
 
 
 class FloatField(BaseField):

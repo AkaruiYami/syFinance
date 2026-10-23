@@ -36,13 +36,12 @@ advisor_page = st.Page(
     "./pages/p_advisor.py", title="Advisor", icon=":material/candlestick_chart:"
 )
 target_page = st.Page("./pages/p_target.py", title="Target", icon=":material/target:")
-# loan_page = st.Pretricted=Noneage("./pages/p_loan.py", title="Loan", icon=":material/credit_score:")
-
+budget_settings_page = st.Page(
+    "./pages/p_budget_settings.py", title="Budget Settings", icon=":material/settings:"
+)
 admin_page = st.Page("./admin/pages/p_home.py", title="Admin")
 admin_data_page = st.Page("./admin/pages/p_data.py", title="Data Management")
-admin_categories_page = st.Page(
-    "./admin/pages/p_categories.py", title="Categories"
-)
+admin_categories_page = st.Page("./admin/pages/p_categories.py", title="Categories")
 
 
 def first_run_setup():
@@ -140,6 +139,7 @@ pg_dict = {
     "": [dashboard_page, income_page, transaction_page],
     "Tools": [advisor_page, target_page],
     "User": [login_page],
+    "Settings": [budget_settings_page],
 }
 
 # First-run: show signup if no users exist (blocks until complete)

@@ -1,13 +1,15 @@
-from datetime import datetime
+from datetime import date
 
 import altair as alt
 import pandas as pd
 import streamlit as st
 
+from components.budget_view import select_period, show_metrics
 from models.income import Income
 from models.transaction import Transactions
 from utils import config
 from utils.auth import require_login
+from utils.budget import comparison_period, records_in, summarize
 
 require_login()
 
@@ -25,77 +27,45 @@ incomes = Income.objects().filter(user_id=int(st.session_state.user_id)).all()
 
 transactions = [trans.to_dict() for trans in transactions]
 incomes = [income.to_dict() for income in incomes]
-# Convert to DataFrames with default columns if empty
-df_expenses = (
-    pd.DataFrame(transactions)
-    if transactions
-    else pd.DataFrame(columns=["amount", "category", "date"])  # pyright: ignore
+mode, period, policies, _ = select_period(
+    int(st.session_state.user_id), transactions + incomes, "dashboard"
 )
-df_income = (
-    pd.DataFrame(incomes) if incomes else pd.DataFrame(columns=["amount", "date"])  # pyright: ignore
+values = show_metrics(incomes, transactions, period)
+today = date.today()
+total_income = sum(
+    float(record["amount"])
+    for record in incomes
+    if date.fromisoformat(str(record["date"])[:10]) <= today
 )
-
-# Ensure numeric safely
-if "amount" in df_expenses.columns:
-    df_expenses["amount"] = pd.to_numeric(
-        df_expenses["amount"], errors="coerce"
-    ).fillna(0.0)  # pyright: ignore
-else:
-    df_expenses["amount"] = pd.Series(dtype=float)
-
-if "amount" in df_income.columns:
-    df_income["amount"] = pd.to_numeric(df_income["amount"], errors="coerce").fillna(  # pyright: ignore
-        0.0
-    )
-else:
-    df_income["amount"] = pd.Series(dtype=float)
-
-# Ensure date is datetime safely
-if "date" in df_expenses.columns and not df_expenses.empty:
-    df_expenses["date"] = pd.to_datetime(df_expenses["date"], errors="coerce")
-if "date" in df_income.columns and not df_income.empty:
-    df_income["date"] = pd.to_datetime(df_income["date"], errors="coerce")
-
-total_expenses = df_expenses["amount"].sum() if not df_expenses.empty else 0.0
-monthly_income = df_income["amount"].sum() if not df_income.empty else 0.0
-net_savings = monthly_income - total_expenses
-
-# Filter only current month
-now = datetime.now()
-if not df_expenses.empty and "date" in df_expenses.columns:
-    df_expenses = df_expenses[
-        (df_expenses["date"].dt.year == now.year)
-        & (df_expenses["date"].dt.month == now.month)
-    ]
-if not df_income.empty and "date" in df_income.columns:
-    df_income = df_income[
-        (df_income["date"].dt.year == now.year)
-        & (df_income["date"].dt.month == now.month)
-    ]
-
-# Totals
-total_expenses = df_expenses["amount"].sum() if not df_expenses.empty else 0.0
-monthly_income = df_income["amount"].sum() if not df_income.empty else 0.0
-
-# Format metrics
-total_expenses_str = config.fmt(total_expenses)
-monthly_income_str = config.fmt(monthly_income)
-net_savings_str = config.fmt(net_savings)
-
-# Display metrics
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Monthly Income", monthly_income_str)
-with col2:
-    st.metric("Total Expenses", total_expenses_str)
-with col3:
-    st.metric("Net Savings", net_savings_str)
+total_spending = sum(
+    float(record["amount"])
+    for record in transactions
+    if date.fromisoformat(str(record["date"])[:10]) <= today
+)
+st.metric("Total savings (all time)", config.fmt(total_income - total_spending))
+previous = comparison_period(period, mode, policies)
+previous_values = summarize(incomes, transactions, previous)
+st.caption(
+    f"Previous {'cycle' if mode == 'Payday cycle' else 'month'} comparison: "
+    f"{previous.label}"
+)
+st.metric(
+    "Spending versus previous period",
+    config.fmt(values["spending"]),
+    delta=config.fmt(values["spending"] - previous_values["spending"]),
+    delta_color="inverse",
+)
+df_expenses = pd.DataFrame(records_in(transactions, period, date.today()))
+total_expenses = values["spending"]
+monthly_income = values["income"]
 
 st.divider()
 st.subheader("Expenses by Category")
 
 if not df_expenses.empty:
-    show_subcats = st.checkbox("Show subcategory breakdown", key="summary_subcat_toggle")
+    show_subcats = st.checkbox(
+        "Show subcategory breakdown", key="summary_subcat_toggle"
+    )
 
     if show_subcats:
         df_plot = df_expenses.copy()
@@ -136,7 +106,7 @@ if not df_expenses.empty:
     table_display["amount"] = table_display["amount"].map(config.fmt)
     st.table(table_display)
 else:
-    st.info("No transactions recorded this month.")
+    st.info("No transactions recorded in this period.")
 
 st.divider()
 st.subheader("Income vs Expenses Overview")
