@@ -93,12 +93,15 @@ if records:
         history_records,
         columns=["id", "date", "amount", "category", "subcategory", "description"],
     )
+    df["date"] = pd.to_datetime(df["date"])
     df["amount"] = df["amount"].astype(float).map(config.fmt)
     df.set_index("id", inplace=True)
     df = df.sort_values("date", ascending=False)
 
     # paginated_table(df, MAX_ITEM_PER_PAGE, table_id="trans_rec")
-    st.dataframe(df)
+    st.dataframe(
+        df, column_config={"date": st.column_config.DateColumn(format="YYYY-MM-DD")}
+    )
 
     st.divider()
     st.subheader("Export Data")

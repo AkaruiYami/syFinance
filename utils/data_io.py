@@ -23,7 +23,8 @@ REQUIRED_COLUMNS = {
     Wishlist: ["name", "amount"],
 }
 
-DATE_FORMATS = ["%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"]
+# Slash-separated CSV dates are always day/month/year; exports use ISO dates.
+DATE_FORMATS = ["%Y-%m-%d", "%d/%m/%Y"]
 
 
 def _parse_date(value):

@@ -99,7 +99,9 @@ st.subheader("Import CSV for a User")
 st.markdown(
     "Import a CSV file for a specific user. Matching IDs update that user's records. "
     "New IDs are preserved; leave the ID blank to create a new record. "
-    "IDs belonging to another user are skipped."
+    "IDs belonging to another user are skipped. "
+    "Dates must use DD/MM/YYYY (01/12/2025 means 1 December 2025) "
+    "or YYYY-MM-DD."
 )
 
 all_users = User.objects().all()
