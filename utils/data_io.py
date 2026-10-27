@@ -4,6 +4,8 @@ import sqlite3
 import zipfile
 from datetime import datetime
 
+from models.category import Category
+from models.subcategory import Subcategory
 from models.budget_policy import BudgetPolicy
 from models.field import DateField, FloatField
 from models.income import Income
@@ -123,7 +125,7 @@ def export_all_users_data_zip():
     return buf.getvalue()
 
 
-def _upsert_record(model_cls, kwargs, raw_id):
+def _upsert_record(model_cls, kwargs, raw_id, new_subcategory=None):
     """Save an imported row, preserving supplied IDs and user ownership."""
     record_id = None
     if raw_id:
@@ -146,6 +148,14 @@ def _upsert_record(model_cls, kwargs, raw_id):
                 setattr(instance, name, value)
         else:
             instance = model_cls.new(**kwargs)
+
+        if new_subcategory:
+            category_id, name = new_subcategory
+            if not Subcategory.objects().filter(category_id=category_id, name=name).first():
+                conn.execute(
+                    "INSERT INTO subcategory (category_id, name) VALUES (?, ?)",
+                    (category_id, name),
+                )
 
         data = instance.to_dict()
         data.pop("id")
@@ -180,7 +190,31 @@ def reset_user_data(user_id, model_cls=None):
     return deleted
 
 
-def import_csv(model_cls, file, user_id=None):
+def preview_csv_subcategories(content):
+    """Return missing (category, subcategory) pairs without changing any data."""
+    if isinstance(content, bytes):
+        content = content.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(content))
+    missing = set()
+    for raw_row in reader:
+        row = {(key or "").strip().lower(): (value or "").strip()
+               for key, value in raw_row.items() if key is not None}
+        name = row.get("subcategory")
+        if not name:
+            continue
+        category_name = row.get("category", "")
+        category = Category.objects().filter(name=category_name).first()
+        if category is None:
+            raise ValueError(
+                f"Unknown category '{category_name}' for subcategory '{name}'. "
+                "Correct the CSV or create the category first."
+            )
+        if not Subcategory.objects().filter(category_id=category.id, name=name).first():
+            missing.add((category_name, name))
+    return sorted(missing)
+
+
+def import_csv(model_cls, file, user_id=None, *, approved_subcategories=()):
     result = {"imported": 0, "updated": 0, "skipped": 0, "errors": []}
     if model_cls not in MODEL_MAP.values():
         result["errors"].append("Use backup restore to import budget policies.")
@@ -249,7 +283,17 @@ def import_csv(model_cls, file, user_id=None):
                     raise ValueError(f"user_id {uid} does not exist")
             kwargs["user"] = uid
             raw_id = (row.get(col_index.get("id")) or "").strip()
-            outcome = _upsert_record(model_cls, kwargs, raw_id)
+            new_subcategory = None
+            if model_cls is Transactions and user_id is not None and kwargs.get("subcategory"):
+                pair = (kwargs["category"], kwargs["subcategory"])
+                category = Category.objects().filter(name=pair[0]).first()
+                if category is None:
+                    raise ValueError(f"Unknown category '{pair[0]}'; create it first")
+                if not Subcategory.objects().filter(category_id=category.id, name=pair[1]).first():
+                    if pair not in approved_subcategories:
+                        raise ValueError(f"New subcategory '{pair[1]}' under '{pair[0]}' requires confirmation")
+                    new_subcategory = (category.id, pair[1])
+            outcome = _upsert_record(model_cls, kwargs, raw_id, new_subcategory)
             result[outcome] += 1
 
         except Exception as e:

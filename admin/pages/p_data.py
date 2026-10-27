@@ -1,4 +1,6 @@
+import csv
 import io
+import hashlib
 import zipfile
 from datetime import datetime
 
@@ -14,6 +16,7 @@ from utils.data_io import (
     MODEL_MAP,
     export_all_users_data_zip,
     import_csv,
+    preview_csv_subcategories,
     reset_user_data,
     restore_budget_policies,
 )
@@ -124,8 +127,32 @@ else:
 
     uploaded_csv = st.file_uploader("Upload CSV", type=["csv"], key="import_csv")
 
-    if uploaded_csv and st.button("Import"):
-        result = import_csv(selected_model, uploaded_csv, target_user_id)
+    missing_subcategories = []
+    import_ready = True
+    if uploaded_csv and selected_model is Transactions:
+        try:
+            missing_subcategories = preview_csv_subcategories(uploaded_csv.getvalue())
+        except (ValueError, UnicodeError, csv.Error) as error:
+            st.error(str(error))
+            import_ready = False
+        if missing_subcategories:
+            st.warning("Review new subcategories for spelling errors before importing. Correct the CSV and upload it again if needed.")
+            st.dataframe(
+                [{"Category": category, "New subcategory": name}
+                 for category, name in missing_subcategories],
+                hide_index=True,
+            )
+            fingerprint = hashlib.sha256(uploaded_csv.getvalue()).hexdigest()
+            import_ready = st.checkbox(
+                "I checked these names. Create these subcategories and import the CSV.",
+                key=f"confirm_subcategories_{target_user_id}_{fingerprint}_{missing_subcategories!r}",
+            )
+
+    if uploaded_csv and st.button("Import", disabled=not import_ready):
+        result = import_csv(
+            selected_model, io.BytesIO(uploaded_csv.getvalue()), target_user_id,
+            approved_subcategories=missing_subcategories,
+        )
 
         col1, col2, col3 = st.columns(3)
         col1.metric("Created", result["imported"])

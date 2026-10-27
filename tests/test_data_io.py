@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 from models.base import BaseModel
 from models.budget_policy import BudgetPolicy
+from models.category import Category
+from models.subcategory import Subcategory
 from models.income import Income
 from models.transaction import Transactions
 from models.user import User
@@ -14,6 +16,7 @@ from models.wishlist import Wishlist
 from utils.data_io import (
     export_all_users_data_zip,
     import_csv,
+    preview_csv_subcategories,
     reset_user_data,
 )
 
@@ -32,7 +35,7 @@ class DataImportTests(unittest.TestCase):
         self.tables_patch = patch.object(BaseModel, "_tables_created", set())
         self.tables_patch.start()
         self.addCleanup(self.tables_patch.stop)
-        for model in (User, Income, Transactions, Wishlist, BudgetPolicy):
+        for model in (User, Income, Transactions, Wishlist, BudgetPolicy, Category, Subcategory):
             model.create_table()
         for name in ("Alice", "Bob"):
             User.new(name=name, password="test").save()
@@ -90,6 +93,61 @@ class DataImportTests(unittest.TestCase):
         self.assertEqual((result["imported"], result["skipped"]), (0, 2))
         self.assertEqual(len(Transactions.objects().all()), 0)
         self.assertTrue(all("Invalid date" in error for error in result["errors"]))
+
+    def test_subcategory_preview_and_confirmation(self):
+        food = Category.new(name="Food")
+        food.save()
+        travel = Category.new(name="Travel")
+        travel.save()
+        Subcategory.new(name="Lunch", category=food.id).save()
+        content = (
+            "id,date,category,subcategory,amount\n"
+            "41,01/12/2025,Food,Coffee,10\n"
+            "42,02/12/2025,Food,Coffee,20\n"
+            "43,03/12/2025,Travel,Lunch,30\n"
+            "44,04/12/2025,Food,Lunch,40\n"
+            "45,05/12/2025,Food,,50"
+        )
+        pairs = preview_csv_subcategories(content.encode())
+        self.assertEqual(pairs, [("Food", "Coffee"), ("Travel", "Lunch")])
+        self.assertEqual(len(Subcategory.objects().all()), 1)
+        self.assertEqual(len(Transactions.objects().all()), 0)
+        result = import_csv(Transactions, io.StringIO(content), 1)
+        self.assertEqual((result["imported"], result["skipped"]), (2, 3))
+        self.assertEqual(len(Subcategory.objects().all()), 1)
+        result = import_csv(
+            Transactions, io.StringIO(content), 1, approved_subcategories=pairs
+        )
+        self.assertEqual((result["imported"], result["updated"], result["skipped"]), (3, 2, 0))
+        self.assertEqual(len(Subcategory.objects().all()), 3)
+        self.assertEqual(preview_csv_subcategories(content), [])
+        self.assertEqual(Transactions.objects().filter(id=41).first().subcategory, "Coffee")
+
+    def test_subcategory_creation_requires_exact_approval_and_valid_row(self):
+        food = Category.new(name="Food")
+        food.save()
+        header = "id,date,category,subcategory,amount\n"
+        for row, approvals in (
+            ("41,2025-12-01,Food,Cofee,10", [("Food", "Coffee")]),
+            ("41,invalid,Food,Coffee,10", [("Food", "Coffee")]),
+            ("41,2025-12-01,Missing,Coffee,10", [("Missing", "Coffee")]),
+        ):
+            with self.subTest(row=row):
+                result = import_csv(
+                    Transactions, io.StringIO(header + row), 1,
+                    approved_subcategories=approvals,
+                )
+                self.assertEqual(result["skipped"], 1)
+                self.assertEqual(len(Subcategory.objects().all()), 0)
+        with self.assertRaisesRegex(ValueError, "Unknown category"):
+            preview_csv_subcategories(header + "41,2025-12-01,Missing,Coffee,10")
+        self.load("41,2025-12-01,Food,10,Bob", user_id=2)
+        result = import_csv(
+            Transactions, io.StringIO(header + "41,2025-12-01,Food,Coffee,10"), 1,
+            approved_subcategories=[("Food", "Coffee")],
+        )
+        self.assertEqual(result["skipped"], 1)
+        self.assertEqual(len(Subcategory.objects().all()), 0)
 
     def test_backup_round_trip_is_repeatable(self):
         self.load("42,2026-01-01,Food,10,Original")
