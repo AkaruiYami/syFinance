@@ -4,16 +4,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="syFinance — A personal finance tracking and analysis tool. Track income, expenses, savings, and affordability locally.">
+  <meta name="description" content="syFinance — A local personal finance dashboard for income, expenses, payday cycles, savings targets, and spending trends.">
   <meta property="og:title" content="syFinance">
   <meta property="og:description" content="A personal finance tracking and analysis tool that runs locally with transparent calculations.">
-  <meta property="og:image" content="_static/_preview/dashboard.png">
+  <meta property="og:image" content="https://akaruiyami.github.io/syFinance/_static/_preview/story-dashboard.png">
   <meta property="og:url" content="https://akaruiyami.github.io/syFinance/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="syFinance">
   <meta name="twitter:description" content="A personal finance tracking and analysis tool that runs locally with transparent calculations.">
-  <meta name="twitter:image" content="_static/_preview/dashboard.png">
+  <meta name="twitter:image" content="https://akaruiyami.github.io/syFinance/_static/_preview/story-dashboard.png">
   <title>syFinance</title>
   <link rel="icon" type="image/x-icon" href="_static/favicon.ico">
 
@@ -52,12 +52,12 @@
           <h1 class="display-4 fw-bold">syFinance</h1>
           <p class="lead mt-3 mb-4">
             A personal finance tracking and analysis tool that helps you record income and expenses,
-            understand savings trends, and make better affordability decisions using transparent calculations.
+            compare spending periods, and plan around a payday cycle and savings target.
           </p>
 
           <div class="mb-4">
             <span class="pill">Local-first</span>
-            <span class="pill">Transparent insights</span>
+            <span class="pill">Clear spending trends</span>
             <span class="pill">Personal or family use</span>
           </div>
 
@@ -75,13 +75,13 @@
         <div class="col-lg-6">
           <div class="card hero-card p-3 bg-white">
             <img
-              src="_static/_preview/dashboard.png"
-              alt="syFinance dashboard preview"
+              src="_static/_preview/story-dashboard.png"
+              alt="syFinance dashboard showing a payday cycle, spending, and savings target"
               loading="lazy"
               class="preview-img hero-preview-light">
             <img
-              src="_static/_preview/dashboard-dark.png"
-              alt="syFinance dashboard preview (dark)"
+              src="_static/_preview/story-dashboard-dark.png"
+              alt="syFinance dashboard in dark mode showing a payday cycle and budget metrics"
               loading="lazy"
               class="preview-img hero-preview-dark">
           </div>
@@ -94,8 +94,8 @@
     <div class="container text-center">
       <h2 class="section-title">Why syFinance?</h2>
       <p class="section-subtitle">
-        Most finance apps are cloud-based, opaque, or overloaded with features you may never use.
-        syFinance focuses on practical tracking and clear analysis while keeping your data local.
+        syFinance keeps income, expenses, and budget settings together in a local dashboard.
+        See where your money goes and compare periods using clear calculations.
       </p>
 
       <div class="row g-4 justify-content-center">
@@ -143,7 +143,7 @@
       <div class="text-center">
         <h2 class="section-title">Project Preview</h2>
         <p class="section-subtitle">
-          A quick look at the dashboard and the kind of interface syFinance provides.
+          Explore the app with fictional data spanning several months. Each view comes from the local app.
         </p>
       </div>
 
@@ -151,35 +151,56 @@
         <div class="col-lg-8">
           <div id="previewCarousel" class="carousel slide" data-bs-ride="false">
             <div class="carousel-indicators">
-              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="0" class="active" aria-label="Slide 1"></button>
-              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
-              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
-              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="0" class="active" aria-label="Dashboard preview"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="1" aria-label="Transaction summary preview"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="2" aria-label="Income and spending trend preview"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="3" aria-label="Advisor insights preview"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="4" aria-label="Category trends and recurring charges preview"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="5" aria-label="Unusual transactions and goals preview"></button>
+              <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="6" aria-label="Budget settings preview"></button>
             </div>
             <div class="carousel-inner">
               <div class="carousel-item active">
                 <img class="d-block w-100 gallery-img" loading="lazy"
-                  src="_static/_preview/income-entry.png" alt="Income entry screen"
-                  data-dark="_static/_preview/income-entry-dark.png">
-                <div class="gallery-label">Income Entry</div>
+                  src="_static/_preview/story-dashboard.png" alt="Dashboard with current income, spending, remaining balance, and savings target"
+                  data-dark="_static/_preview/story-dashboard-dark.png">
+                <div class="gallery-label">Dashboard</div>
               </div>
               <div class="carousel-item">
                 <img class="d-block w-100 gallery-img" loading="lazy"
-                  src="_static/_preview/income-graph.png" alt="Income graph screen"
-                  data-dark="_static/_preview/income-graph-dark.png">
-                <div class="gallery-label">Income Graphs</div>
+                  src="_static/_preview/story-transaction-summary.png" alt="Monthly transaction summary with category filters and spending lines"
+                  data-dark="_static/_preview/story-transaction-summary-dark.png">
+                <div class="gallery-label">Transaction Summary</div>
               </div>
               <div class="carousel-item">
                 <img class="d-block w-100 gallery-img" loading="lazy"
-                  src="_static/_preview/transaction-history.png" alt="Transaction history screen"
-                  data-dark="_static/_preview/transaction-history-dark.png">
-                <div class="gallery-label">Transaction History</div>
+                  src="_static/_preview/story-advisor-trend.png" alt="Eight months of income and spending trends in the financial advisor"
+                  data-dark="_static/_preview/story-advisor-trend-dark.png">
+                <div class="gallery-label">Income &amp; Spending Trends</div>
               </div>
               <div class="carousel-item">
                 <img class="d-block w-100 gallery-img" loading="lazy"
-                  src="_static/_preview/advisor-screen.png" alt="Advisor screen"
-                  data-dark="_static/_preview/advisor-screen-dark.png">
-                <div class="gallery-label">Affordability Advisor</div>
+                  src="_static/_preview/story-advisor-insights.png" alt="Advisor spending comparison, completed cycle averages, and personalized guidance"
+                  data-dark="_static/_preview/story-advisor-insights-dark.png">
+                <div class="gallery-label">Budget Insights</div>
+              </div>
+              <div class="carousel-item">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/story-advisor-patterns.png" alt="Category trends and recurring charges in the financial advisor"
+                  data-dark="_static/_preview/story-advisor-patterns-dark.png">
+                <div class="gallery-label">Category Trends &amp; Recurring Charges</div>
+              </div>
+              <div class="carousel-item">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/story-advisor-goals.png" alt="Unusual transaction, weekday spending chart, and savings goal estimate"
+                  data-dark="_static/_preview/story-advisor-goals-dark.png">
+                <div class="gallery-label">Unusual Spending &amp; Goals</div>
+              </div>
+              <div class="carousel-item">
+                <img class="d-block w-100 gallery-img" loading="lazy"
+                  src="_static/_preview/story-budget-settings.png" alt="Payday cycle and savings target settings with settings history"
+                  data-dark="_static/_preview/story-budget-settings-dark.png">
+                <div class="gallery-label">Budget Settings</div>
               </div>
             </div>
             <button class="carousel-control-prev" type="button" data-bs-target="#previewCarousel" data-bs-slide="prev">
@@ -200,9 +221,9 @@
                 <h5 class="mb-3">What you can do</h5>
                 <ul class="mb-0 text-muted">
                   <li>Track income and expenses in one place</li>
-                  <li>Review monthly savings clearly</li>
-                  <li>Understand spending patterns</li>
-                  <li>Estimate affordability based on savings, not only income</li>
+                  <li>Review calendar months or payday cycles</li>
+                  <li>Explore categories, subcategories, and trends</li>
+                  <li>Set a savings target and compare spending periods</li>
                 </ul>
               </div>
             </div>
@@ -211,8 +232,7 @@
               <div class="card info-card p-4">
                 <h5 class="mb-3">Target use</h5>
                 <p class="mb-0 text-muted">
-                  Designed for local use with Streamlit, making it suitable for personal finance management,
-                  household tracking, or small private setups.
+                  Designed for local use with Streamlit, making it suitable for personal or household finance tracking.
                 </p>
               </div>
             </div>
@@ -228,7 +248,7 @@
       <div class="text-center">
         <h2 class="section-title">Core Features</h2>
         <p class="section-subtitle">
-          Focused features that support everyday tracking and practical financial analysis.
+          Track records, choose a reporting period, and compare spending against your savings plan.
         </p>
       </div>
 
@@ -239,9 +259,9 @@
               <div class="icon-badge mb-3">
                 <span class="material-symbols-outlined" aria-hidden="true">payments</span>
               </div>
-              <h5>Expense & Income Tracking</h5>
+              <h5>Income & Expense Tracking</h5>
               <p class="text-muted mb-0">
-                Record monthly income and expenses with clear separation for more reliable summaries.
+                Record income and expenses, organize spending by category and subcategory, and export records as CSV.
               </p>
             </div>
           </div>
@@ -253,9 +273,9 @@
               <div class="icon-badge mb-3">
                 <span class="material-symbols-outlined" aria-hidden="true">analytics</span>
               </div>
-              <h5>Affordability Analysis</h5>
+              <h5>Budget & Savings Analysis</h5>
               <p class="text-muted mb-0">
-                Uses savings-oriented metrics instead of raw income alone to better reflect real affordability.
+                Set a payday cycle and savings target, then compare current spending with previous periods.
               </p>
             </div>
           </div>
@@ -269,7 +289,7 @@
               </div>
               <h5>Local Dashboard</h5>
               <p class="text-muted mb-0">
-                Built with Streamlit for a practical local dashboard experience that is simple to run and extend.
+                Review period income, spending, balance, category breakdowns, and trends in a local Streamlit dashboard.
               </p>
             </div>
           </div>
@@ -387,14 +407,12 @@
 <pre>git clone https://github.com/AkaruiYami/syFinance
 cd syFinance
 pip install -r requirements.txt
-python manage.py init_db
 python -m streamlit run main.py</pre>
               </div>
               <div class="tab-pane code-pane" id="uv" role="tabpanel" aria-labelledby="uv-tab">
 <pre>git clone https://github.com/AkaruiYami/syFinance
 cd syFinance
 uv sync
-python manage.py init_db
 uv run streamlit run main.py</pre>
               </div>
             </div>
